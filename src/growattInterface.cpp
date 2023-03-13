@@ -1,6 +1,11 @@
 // Source: 
 // https://github.com/nygma2004/growatt2mqtt
 // V1.2 20230311
+//
+// 20230313 matthias-bs Replaced SoftwareSerial by HardwareSerial / Serial2
+//                      Commented Watchdog ESP.wdtDisable()/ESP.wdtEnable()
+//                      The code was originally executed on ESP8266 in a timer interrupt handler;
+//                      will now be run on ESP32 in main execution loop.
 
 #include "growattInterface.h"
 
@@ -18,8 +23,11 @@ growattIF::growattIF(int _PinMAX485_RE_NEG, int _PinMAX485_DE, int _PinMAX485_RX
 }
 
 void growattIF::initGrowatt() {
-  serial = new SoftwareSerial (PinMAX485_RX, PinMAX485_TX, false); //RX, TX
-  serial->begin(MODBUS_RATE);
+  //serial = new SoftwareSerial (PinMAX485_RX, PinMAX485_TX, false); //RX, TX
+  Serial2.begin(MODBUS_RATE, SERIAL_8N1, PinMAX485_RX, PinMAX485_TX);
+  
+  //serial->begin(MODBUS_RATE);
+  serial = &Serial2;
   growattInterface.begin(SLAVE_ID , *serial);
 
   static growattIF* obj = this;                               //pointer to the object
@@ -55,9 +63,9 @@ void growattIF::postTransmission() {
 uint8_t growattIF::ReadInputRegisters(char* json) {
   uint8_t result;
 
-  ESP.wdtDisable();
+  //ESP.wdtDisable();
   result = growattInterface.readInputRegisters(setcounter * 64, 64);
-  ESP.wdtEnable(1);
+  //ESP.wdtEnable(1);
 
   if (result == growattInterface.ku8MBSuccess)   {
     if (setcounter == 0) {    //register 0-63
@@ -224,9 +232,9 @@ uint8_t growattIF::ReadInputRegisters(char* json) {
 
 uint8_t growattIF::ReadHoldingRegisters(char* json) {
   uint8_t result;
-  ESP.wdtDisable();
+  //ESP.wdtDisable();
   result = growattInterface.readHoldingRegisters(setcounter * 64, 64);
-  ESP.wdtEnable(1);
+  //ESP.wdtEnable(1);
 
   if (result == growattInterface.ku8MBSuccess)   {
     if (setcounter == 0) {      //register 0-63
