@@ -1,13 +1,15 @@
 // Source: 
 // https://github.com/nygma2004/growatt2mqtt
 // V1.2 20230311
+//
+// 20230313 matthias-bs Replaced SoftwareSerial by HardwareSerial
 
 #ifndef GROWATTINTERFACE_H
 #define GROWATTINTERFACE_H
 
 #include "Arduino.h"
 #include <ModbusMaster.h>         // Modbus master library for ESP8266
-#include <SoftwareSerial.h>       // Leave the main serial line (USB) for debugging and flashing
+//#include <SoftwareSerial.h>       // Leave the main serial line (USB) for debugging and flashing
 
 
 class growattIF {
@@ -16,7 +18,8 @@ class growattIF {
 
   private:
     ModbusMaster growattInterface;
-    SoftwareSerial *serial;
+    //SoftwareSerial *serial;
+    HardwareSerial *serial;
     void preTransmission();
     void postTransmission();
     int PinMAX485_RE_NEG;
