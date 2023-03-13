@@ -8,7 +8,7 @@
 #define GROWATTINTERFACE_H
 
 #include "Arduino.h"
-#include <ModbusMaster.h>         // Modbus master library for ESP8266
+#include <ModbusMaster.h>         // Modbus master library for ESP8266 by Doc Walker (https://github.com/4-20ma/ModbusMaster)
 //#include <SoftwareSerial.h>       // Leave the main serial line (USB) for debugging and flashing
 
 
