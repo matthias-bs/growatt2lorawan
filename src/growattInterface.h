@@ -2,19 +2,17 @@
 // https://github.com/nygma2004/growatt2mqtt
 // V1.2 20230311
 //
-// 20230313 matthias-bs Replaced SoftwareSerial by HardwareSerial
-
+// 20230313 matthias-bs Replaced SoftwareSerial by HardwareSerial 
 #ifndef GROWATTINTERFACE_H
 #define GROWATTINTERFACE_H
 
 #include "Arduino.h"
 #include <ModbusMaster.h>         // Modbus master library for ESP8266 by Doc Walker (https://github.com/4-20ma/ModbusMaster)
 //#include <SoftwareSerial.h>       // Leave the main serial line (USB) for debugging and flashing
-
-
-class growattIF {
 #define SLAVE_ID        1         // Default slave ID of Growatt
 #define MODBUS_RATE     9600      // Modbus speed of Growatt, do not change
+
+class growattIF {
 
   private:
     ModbusMaster growattInterface;
@@ -29,6 +27,7 @@ class growattIF {
     int setcounter = 0;
     int overflow;
 
+  public:
     struct modbus_input_registers
     {
       int status;
@@ -48,7 +47,7 @@ class growattIF {
     };
 
     struct modbus_holding_registers modbussettings;
-  public:
+
     growattIF(int _PinMAX485_RE_NEG, int _PinMAX485_DE, int _PinMAX485_RX, int _PinMAX485_TX);
     void initGrowatt();
     uint8_t writeRegister(uint16_t reg, uint16_t message);
