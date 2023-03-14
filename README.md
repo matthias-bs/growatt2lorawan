@@ -15,3 +15,12 @@ This is a "remix" of
 and
 
 * [nygma2004/growatt2mqtt](https://github.com/nygma2004/growatt2mqtt) - for the Growatt PV Inverter / Modbus part
+
+### Library Dependencies
+
+* [MCCI Arduino Development Kit ADK](https://github.com/mcci-catena/Catena-mcciadk) by MCCI
+* [MCCI LoRaWAN LMIC library](https://github.com/mcci-catena/arduino-lmic) by Thomas Telkamp and Matthijs Kooijman / Terry Moore, MCCI
+* [MCCI Arduino LoRaWAN Library](https://github.com/mcci-catena/arduino-lorawan) by Terry Moore, MCCI
+* [Lora-Serialization](https://github.com/thesolarnomad/lora-serialization) by Joscha Feth
+* [ESP32Time](https://github.com/fbiego/ESP32Time) by Felix Biego
+* [ModbusMaster](https://github.com/4-20ma/ModbusMaster)
