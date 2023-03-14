@@ -1,2 +1,2 @@
 # growatt2lorawan
-LoRaWAN Node for Growatt PV-Inverter Data Interface
+LoRaWAN Node for Growatt PV-Inverter Modbus Data Interface
