@@ -1,29 +1,28 @@
 function ttn_decoder(bytes, port) {
-  // bytes is of type Buffer
-  
-  // see https://github.com/4-20ma/ModbusMaster/blob/master/src/ModbusMaster.h
-  var modbus_code = {
-    0x00: "Success",
-    0x01: "IllegalFunction",
-    0x02: "IllegalDataAddress",
-    0x03: "IllegalDataValue",
-    0x04: "SlaveDeviceFailure",
-    0xE0: "InvalidSlaveID",
-    0xE1: "InvalidFunction",
-    0xE2: "ResponseTimedOut",
-    0xE3: "InvalidCRC"
-  };
-  
-  if (bytes.length === 1) {
-      return {
-          modbus: {
-              code: bytes[0],
-              text: modbus_code[bytes[0]]
-          }
-      };
-  }
+    // bytes is of type Buffer
+    
+    // see https://github.com/4-20ma/ModbusMaster/blob/master/src/ModbusMaster.h
+    var modbus_code = {
+        0x00: "Success",
+        0x01: "IllegalFunction",
+        0x02: "IllegalDataAddress",
+        0x03: "IllegalDataValue",
+        0x04: "SlaveDeviceFailure",
+        0xE0: "InvalidSlaveID",
+        0xE1: "InvalidFunction",
+        0xE2: "ResponseTimedOut",
+        0xE3: "InvalidCRC"
+    };
+    
+    if (bytes.length === 1) {
+        return {
+            modbus: {
+                code: bytes[0],
+                text: modbus_code[bytes[0]]
+            }
+        };
+    }
 
-  // IMPORTANT: paste code from src/decoder.js here
     var bytesToInt = function(bytes) {
     var i = 0;
     for (var x = 0; x < bytes.length; x++) {
@@ -32,6 +31,19 @@ function ttn_decoder(bytes, port) {
     return i;
     };
 
+    var modbus = function(bytes) {
+    if (bytes.length !== uint8.BYTES)
+        throw new Error('Modbus status must have exactly 4 bytes');
+    }
+    return {
+          modbus: {
+              code: bytes[0],
+              text: modbus_code[bytes[0]]
+          }
+      };
+    }
+    modbus.BYTES = 1;
+    
     var unixtime = function(bytes) {
     if (bytes.length !== unixtime.BYTES) {
         throw new Error('Unix time must have exactly 4 bytes');
@@ -187,6 +199,7 @@ function ttn_decoder(bytes, port) {
             bitmap: bitmap,
             rawfloat: rawfloat,
             uint16fp1: uint16fp1,
+            modbus: modbus,
             decode: decode
         };
     }
@@ -194,7 +207,7 @@ function ttn_decoder(bytes, port) {
     if (port === 1) {
         return decode(
             bytes,
-            [uint8,        uint8,        uint8,          rawfloat,      rawfloat,     rawfloat, 
+            [modbus,       uint8,        uint8,          rawfloat,      rawfloat,     rawfloat, 
             rawfloat,      rawfloat,      rawfloat
             ],
             ['modbus',     'status',     'faultcode',    'pv1voltage',  'pv1current', 'pv1power',
