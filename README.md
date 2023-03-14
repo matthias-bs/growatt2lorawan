@@ -1,12 +1,6 @@
 # growatt2lorawan
 LoRaWAN Node for Growatt PV-Inverter Modbus Data Interface
 
-Hardware Requirements:
-* ESP32
-* SX1276 (or compatible) LoRaWAN Radio Transceiver
-* LoRaWAN Antenna
-* RS485 Transceiver - 3.3V compatible, half-duplex capable (e.g [Waveshare 4777](https://www.waveshare.com/wiki/RS485_Board_(3.3V)) module)
-
 :construction_worker: **Work in Progress!** :construction_worker: 
 
 This is a "remix" of 
@@ -16,7 +10,19 @@ and
 
 * [nygma2004/growatt2mqtt](https://github.com/nygma2004/growatt2mqtt) - for the Growatt PV Inverter / Modbus part
 
-### Library Dependencies
+## Hardware Requirements
+* ESP32
+* SX1276 (or compatible) LoRaWAN Radio Transceiver
+* LoRaWAN Antenna
+* RS485 Transceiver - 3.3V compatible, half-duplex capable (e.g [Waveshare 4777](https://www.waveshare.com/wiki/RS485_Board_(3.3V)) module)
+
+## Power Supply
+
+The ESP32 development board can be powerd from the inverter's USB port **which only provides power if the inverter is active**
+
+**No sun - no power - no transmission!** :sunglasses:
+
+## Library Dependencies
 
 * [MCCI Arduino Development Kit ADK](https://github.com/mcci-catena/Catena-mcciadk) by MCCI
 * [MCCI LoRaWAN LMIC library](https://github.com/mcci-catena/arduino-lmic) by Thomas Telkamp and Matthijs Kooijman / Terry Moore, MCCI
