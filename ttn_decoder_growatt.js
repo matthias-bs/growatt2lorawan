@@ -10,15 +10,16 @@ function ttn_decoder(bytes, port) {
     0x04: "SlaveDeviceFailure",
     0xE0: "InvalidSlaveID",
     0xE1: "InvalidFunction",
-    0xE2: "ResponseTimedOut"
+    0xE2: "ResponseTimedOut",
     0xE3: "InvalidCRC"
   };
   
-  if bytes.length === 1) {
+  if (bytes.length === 1) {
       return {
           modbus: {
               code: bytes[0],
               text: modbus_code[bytes[0]]
+          }
       };
   }
 
@@ -196,7 +197,7 @@ function ttn_decoder(bytes, port) {
             [uint8,        uint8,        uint8,          rawfloat,      rawfloat,     rawfloat, 
             rawfloat,      rawfloat,      rawfloat
             ],
-            ['modbus'      'status',     'faultcode',    'pv1voltage',  'pv1current', 'pv1power',
+            ['modbus',     'status',     'faultcode',    'pv1voltage',  'pv1current', 'pv1power',
             'outputpower', 'gridvoltage', 'gridfrequency'
             ]
         );
