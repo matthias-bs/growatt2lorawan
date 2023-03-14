@@ -11,16 +11,18 @@ and
 * [nygma2004/growatt2mqtt](https://github.com/nygma2004/growatt2mqtt) - for the Growatt PV Inverter / Modbus part
 
 ## Hardware Requirements
-* ESP32
+* ESP32 (optionally with LiPo battery charger and battery)
 * SX1276 (or compatible) LoRaWAN Radio Transceiver
 * LoRaWAN Antenna
 * RS485 Transceiver - 3.3V compatible, half-duplex capable (e.g [Waveshare 4777](https://www.waveshare.com/wiki/RS485_Board_(3.3V)) module)
 
 ## Power Supply
 
-The ESP32 development board can be powerd from the inverter's USB port **which only provides power if the inverter is active**
+The ESP32 development board can be powerd from the inverter's USB port **which only provides power if the inverter is active**.
 
 **No sun - no power - no transmission!** :sunglasses:
+
+Some ESP32 boards have an integrated LiPo battery charger. You could power the board from a battery while there is no PV power (at least for a few hours). 
 
 ## Library Dependencies
 
