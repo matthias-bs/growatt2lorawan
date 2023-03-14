@@ -22,7 +22,7 @@ The ESP32 development board can be powerd from the inverter's USB port **which o
 
 **No sun - no power - no transmission!** :sunglasses:
 
-Some ESP32 boards have an integrated LiPo battery charger. You could power the board from a battery while there is no PV power (at least for a few hours). 
+But: Some ESP32 boards have an integrated LiPo battery charger. You could power the board from a battery while there is no PV power (at least for a few hours). 
 
 ## Library Dependencies
 
