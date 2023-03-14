@@ -13,15 +13,6 @@ function ttn_decoder(bytes, port) {
         0xE2: "ResponseTimedOut",
         0xE3: "InvalidCRC"
     };
-    
-    if (bytes.length === 1) {
-        return {
-            modbus: {
-                code: bytes[0],
-                text: modbus_code[bytes[0]]
-            }
-        };
-    }
 
     var bytesToInt = function(bytes) {
     var i = 0;
@@ -32,7 +23,7 @@ function ttn_decoder(bytes, port) {
     };
 
     var modbus = function(bytes) {
-    if (bytes.length !== uint8.BYTES)
+    if (bytes.length !== modbus.BYTES) {
         throw new Error('Modbus status must have exactly 4 bytes');
     }
     return {
@@ -41,7 +32,7 @@ function ttn_decoder(bytes, port) {
               text: modbus_code[bytes[0]]
           }
       };
-    }
+    };
     modbus.BYTES = 1;
     
     var unixtime = function(bytes) {
@@ -204,6 +195,11 @@ function ttn_decoder(bytes, port) {
         };
     }
     
+    if (bytes.length === 1) {
+        return modbus(bytes);
+    }
+
+    
     if (port === 1) {
         return decode(
             bytes,
@@ -217,7 +213,7 @@ function ttn_decoder(bytes, port) {
     } else {
         return decode(
             bytes,
-            [uint8,           rawfloat,      rawfloat,      rawfloat,         temperature,    temperature,
+            [ modbus,        rawfloat,      rawfloat,      rawfloat,         temperature,    temperature,
             rawfloat,         rawfloat
             ],
             ['modbus',        'energytoday', 'energytotal', 'totalworktime',  'tempinverter', 'tempipm',
