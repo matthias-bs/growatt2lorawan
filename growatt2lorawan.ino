@@ -1,11 +1,9 @@
 ///////////////////////////////////////////////////////////////////////////////
 // growatt2lorawan.ino
 // 
-// Example sketch showing how to periodically poll a sensor and send the data
-// to a LoRaWAN network.
+// LoRaWAN Node for Growatt PV-Inverter Data Interface
 //
-// Based on simple_sensor_bme280.ino with the following modifications: 
-// - reading the sensor data is replaced by a stub
+// https://github.com/mcci-catena/arduino-lorawan/tree/master/examples/arduino_lorawan_esp32_example
 // - implements power saving by using the ESP32 deep sleep mode
 // - implements fast re-joining after sleep by storing network session data
 //   in the ESP32 RTC RAM
@@ -100,7 +98,7 @@
 #include <Arduino_LoRaWAN_EventLog.h>
 #include <arduino_lmic.h>
 #include "settings.h"
-#include "growattInterface.h"
+#include "payload.h"
 
 // NOTE: Add #define LMIC_ENABLE_DeviceTimeReq 1
 //        in ~/Arduino/libraries/MCCI_LoRaWAN_LMIC_library/project_config/lmic_project_config.h
@@ -150,7 +148,6 @@
 
 // LoRa_Serialization
 #include <LoraMessage.h>
-#include "payload.h"
 
 // Pin mappings for some common ESP32 LoRaWAN boards.
 // The ARDUINO_* defines are set by selecting the appropriate board (and borad variant, if applicable) in the Arduino IDE.
@@ -298,7 +295,6 @@ public:
 
     // Sensor data function stubs
     float    getTemperature(void);
-    uint8_t  getHumidity(void);
     uint16_t getVoltageBattery(void);
     uint16_t getVoltageSupply(void);
     
@@ -328,7 +324,6 @@ public:
     
     // Example sensor data
     float    temperature_deg_c; //<! outdoor air temperature in °C
-    uint8_t  humidity_percent;  //<! outdoor humidity in %
     uint16_t battery_voltage_v; //<! battery voltage
     uint16_t supply_voltage_v;  //<! supply voltage
     
@@ -371,13 +366,12 @@ const cMyLoRaWAN::lmic_pinmap myPinMap = {
      .spi_freq = 8000000,
 };
 
-growattIF growattInterface(MAX485_RE_NEG, MAX485_DE, MAX485_RX, MAX485_TX);
 
 // The following variables are stored in the ESP32's RTC RAM -
 // their value is retained after a Sleep Reset.
 RTC_DATA_ATTR uint32_t                        magicFlag1;
 RTC_DATA_ATTR Arduino_LoRaWAN::SessionState   rtcSavedSessionState;
-RTC_DATA_ATTR uint32_t      magicFlag2;
+RTC_DATA_ATTR uint32_t                        magicFlag2;
 RTC_DATA_ATTR Arduino_LoRaWAN::SessionInfo    rtcSavedSessionInfo;
 RTC_DATA_ATTR size_t                          rtcSavedNExtraInfo;
 RTC_DATA_ATTR uint8_t                         rtcSavedExtraInfo[EXTRA_INFO_MEM_SIZE];
@@ -385,7 +379,7 @@ RTC_DATA_ATTR bool                            runtimeExpired = 0;
 RTC_DATA_ATTR uint8_t                         port = 1;
 
 #if defined(GET_NETWORKTIME)
-    RTC_DATA_ATTR time_t                          rtcLastClockSync = 0;     //!< timestamp of last RTC synchonization to network time
+    RTC_DATA_ATTR time_t                      rtcLastClockSync = 0;     //!< timestamp of last RTC synchonization to network time
 #endif
 
 // Uplink payload buffer
@@ -479,8 +473,6 @@ void setup() {
             rtcSyncReq = true;
         }
     #endif
-
-    growattInterface.initGrowatt();
 
     // set up the log; do this first.
     myEventLog.setup();
@@ -947,19 +939,6 @@ cSensor::getTemperature(void)
     return temperature;
 }
 
-//
-// Get temperature (Stub)
-//
-uint8_t
-cSensor::getHumidity(void)
-{
-    const uint8_t humidity = 42;
-    
-    DEBUG_PRINTF("Outdoor Humidity = %d%%\n", humidity);
-    
-    return humidity;
-}
-
     
 //
 // Prepare uplink data for transmission
@@ -988,7 +967,6 @@ cSensor::doUplink(void) {
 #if 0
     // Call sensor data function stubs
     temperature_deg_c = getTemperature();
-    humidity_percent  = getHumidity();
     battery_voltage_v = getVoltageBattery();
     supply_voltage_v  = getVoltageSupply();
     
@@ -998,7 +976,6 @@ cSensor::doUplink(void) {
         
     DEBUG_PRINTF("--- Uplink Data ---\n");
     DEBUG_PRINTF("Air Temperature:   % 3.1f °C\n", temperature_deg_c);
-    DEBUG_PRINTF("Humidity:           %2d   %%\n", humidity_percent);
     DEBUG_PRINTF("Supply  Voltage:  %4d   mV\n",   supply_voltage_v);
     DEBUG_PRINTF("Battery Voltage:  %4d   mV\n",   battery_voltage_v);
     DEBUG_PRINTF("Status:\n");
@@ -1017,7 +994,6 @@ cSensor::doUplink(void) {
                         data_ok,
                         battery_ok);              // 1 Byte
     encoder.writeTemperature(temperature_deg_c);  // 2 Bytes
-    encoder.writeUint8(humidity_percent);         // 1 Byte
     encoder.writeUint16(supply_voltage_v);        // 2 Bytes
     encoder.writeUint16(battery_voltage_v);       // 2 Bytes
 #endif
