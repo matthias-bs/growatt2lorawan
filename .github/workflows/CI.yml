@@ -51,9 +51,10 @@ jobs:
         id: prep
         run:
           |
-          # common settings - no extra options, skip nothing, warnings: more (default|all)
+          # common settings - no extra options, skip nothing, warnings: default (more|all)
+          # /home/runner/Arduino/libraries/ModbusMaster/src/util/crc16.h:71:17: error: 'uint16_t crc16_update(uint16_t, uint8_t)' defined but not used [-Werror=unused-function]
           echo "skip-pattern=''" >> $GITHUB_OUTPUT
-          echo "warnings='more'" >> $GITHUB_OUTPUT
+          echo "warnings='default'" >> $GITHUB_OUTPUT
 
           # platform-dependent settings - extra board options, board index URLs, skip patterns etc.
           if [[ "${{ contains(matrix.board, 'esp32:esp32') }}" == "true" ]]; then
