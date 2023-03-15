@@ -37,5 +37,16 @@ But: Some ESP32 boards have an integrated LiPo battery charger. You could power 
 * [ESP32Time](https://github.com/fbiego/ESP32Time) by Felix Biego
 * [ModbusMaster](https://github.com/4-20ma/ModbusMaster)
 
+## Pinning Configuration
+
+See [src/settings.h](https://github.com/matthias-bs/growatt2lorawan/blob/main/src/settings.h)
+
+| GPIO define   | Waveshare 4777 pin  |
+| ------------- | ------------------- |
+| MAX485_DE     | RSE                 |
+| MAX485_RE_NEG | n.c.                |
+| MAX485_RX     | RO                  |
+| MAX485_TX     | DI                  |
+
 ## MQTT Integration and IoT MQTT Panel Example
 <img src="https://user-images.githubusercontent.com/83612361/225129950-c323e0c7-a58b-4a3f-ba30-e0fd9adc1594.jpg" alt="Screenshot_20230314-130325_IoT_MQTT_Panel_Pro-1" width="400">
