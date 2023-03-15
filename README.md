@@ -1,5 +1,5 @@
 [![CI](https://github.com/matthias-bs/growatt2lorawan/actions/workflows/CI.yml/badge.svg)](https://github.com/matthias-bs/growatt2lorawan/actions/workflows/CI.yml)
-<!--[![GitHub release](https://img.shields.io/github/release/matthias-bs/BresserWeatherSensorTTN?maxAge=3600)](https://github.com/matthias-bs/BresserWeatherSensorTTN/releases)-->
+[![GitHub release](https://img.shields.io/github/release/matthias-bs/growatt2lorawan?maxAge=3600)](https://github.com/matthias-bs/growatt2lorawan/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](https://github.com/matthias-bs/growatt2lorawan/blob/main/LICENSE)
 
 # growatt2lorawan
