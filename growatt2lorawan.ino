@@ -97,8 +97,8 @@
 #include <Arduino_LoRaWAN_network.h>
 #include <Arduino_LoRaWAN_EventLog.h>
 #include <arduino_lmic.h>
-#include "settings.h"
-#include "payload.h"
+#include "src/settings.h"
+#include "src/payload.h"
 
 // NOTE: Add #define LMIC_ENABLE_DeviceTimeReq 1
 //        in ~/Arduino/libraries/MCCI_LoRaWAN_LMIC_library/project_config/lmic_project_config.h
