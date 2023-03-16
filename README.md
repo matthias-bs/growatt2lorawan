@@ -35,7 +35,7 @@ But: Some ESP32 boards have an integrated LiPo battery charger. You could power 
 * [MCCI Arduino LoRaWAN Library](https://github.com/mcci-catena/arduino-lorawan) by Terry Moore, MCCI
 * [Lora-Serialization](https://github.com/thesolarnomad/lora-serialization) by Joscha Feth
 * [ESP32Time](https://github.com/fbiego/ESP32Time) by Felix Biego
-* [ModbusMaster](https://github.com/4-20ma/ModbusMaster)
+* [ModbusMaster](https://github.com/4-20ma/ModbusMaster) by Doc Walker
 
 ## Pinning Configuration
 
