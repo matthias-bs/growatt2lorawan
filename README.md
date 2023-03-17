@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](https://github.com/matthias-bs/growatt2lorawan/blob/main/LICENSE)
 
 # growatt2lorawan
-LoRaWAN Node for Growatt PV-Inverter Modbus Data Interface
+LoRaWAN Node for Growatt Photovoltaic Inverter Modbus Data Interface
 
 :construction_worker: **Work in Progress!** :construction_worker: 
 
