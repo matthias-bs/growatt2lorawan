@@ -49,4 +49,7 @@ See [src/settings.h](https://github.com/matthias-bs/growatt2lorawan/blob/main/sr
 | MAX485_TX     | DI                  |
 
 ## MQTT Integration and IoT MQTT Panel Example
+
+[IoT MQTT Panel](https://snrlab.in/iot/iot-mqtt-panel-user-guide)
+
 <img src="https://user-images.githubusercontent.com/83612361/225129950-c323e0c7-a58b-4a3f-ba30-e0fd9adc1594.jpg" alt="Screenshot_20230314-130325_IoT_MQTT_Panel_Pro-1" width="400">
