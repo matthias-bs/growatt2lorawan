@@ -2,15 +2,16 @@
 // https://github.com/nygma2004/growatt2mqtt
 // V1.2 20230311
 //
-// 20230313 matthias-bs Replaced SoftwareSerial by HardwareSerial 
+// 20230313 matthias-bs Replaced SoftwareSerial by HardwareSerial
+// 20230408 Added different Modbus data rates for RS485 and USB
 #ifndef GROWATTINTERFACE_H
 #define GROWATTINTERFACE_H
 
 #include "Arduino.h"
-#include <ModbusMaster.h>         // Modbus master library for ESP8266 by Doc Walker (https://github.com/4-20ma/ModbusMaster)
-//#include <SoftwareSerial.h>       // Leave the main serial line (USB) for debugging and flashing
-#define SLAVE_ID        1         // Default slave ID of Growatt
-#define MODBUS_RATE     9600      // Modbus speed of Growatt, do not change
+#include <ModbusMaster.h>            // Modbus master library for ESP8266 by Doc Walker (https://github.com/4-20ma/ModbusMaster)
+#define SLAVE_ID                 1   // Default slave ID of Growatt
+#define MODBUS_RATE_RS485     9600   // Growatt Modbus data rate over RS485
+#define MODBUS_RATE_USB     115200   // Growatt Modbus data rate over USB 
 
 class growattIF {
 
