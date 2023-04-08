@@ -18,7 +18,7 @@ and
 * ESP32 (optionally with LiPo battery charger and battery)
 * SX1276 (or compatible) LoRaWAN Radio Transceiver
 * LoRaWAN Antenna
-* RS485 Transceiver - 3.3V compatible, half-duplex capable (e.g [Waveshare 4777](https://www.waveshare.com/wiki/RS485_Board_(3.3V)) module)
+* optional: RS485 Transceiver - 3.3V compatible, half-duplex capable (e.g [Waveshare 4777](https://www.waveshare.com/wiki/RS485_Board_(3.3V)) module)
 
 ## Power Supply
 
