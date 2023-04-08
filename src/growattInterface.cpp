@@ -6,8 +6,11 @@
 //                      Commented Watchdog ESP.wdtDisable()/ESP.wdtEnable()
 //                      The code was originally executed on ESP8266 in a timer interrupt handler;
 //                      will now be run on ESP32 in main execution loop.
+// 20230408 matthias-bs Added Modbus serial interface selection
 
 #include "growattInterface.h"
+
+extern bool modbusRS485;
 
 growattIF::growattIF(int _PinMAX485_RE_NEG, int _PinMAX485_DE, int _PinMAX485_RX, int _PinMAX485_TX) {
   PinMAX485_RE_NEG = _PinMAX485_RE_NEG;
@@ -23,14 +26,15 @@ growattIF::growattIF(int _PinMAX485_RE_NEG, int _PinMAX485_DE, int _PinMAX485_RX
 }
 
 void growattIF::initGrowatt() {
-  //serial = new SoftwareSerial (PinMAX485_RX, PinMAX485_TX, false); //RX, TX
-  //serial->begin(MODBUS_RATE);
-  //growattInterface.begin(SLAVE_ID , *serial);
+  if (modbusRS485) {
+    Serial2.begin(MODBUS_RATE_RS485, SERIAL_8N1, PinMAX485_RX, PinMAX485_TX);
+    growattInterface.begin(SLAVE_ID, Serial2);
+  } else {
+    Serial.begin(MODBUS_RATE_USB, SERIAL_8N1);
+    growattInterface.begin(SLAVE_ID, Serial);
+  }
   
-  Serial2.begin(MODBUS_RATE, SERIAL_8N1, PinMAX485_RX, PinMAX485_TX);
-  growattInterface.begin(SLAVE_ID , Serial2);
-
-  static growattIF* obj = this;                               //pointer to the object
+  static growattIF* obj = this;                              //pointer to the object
   // Callbacks allow us to configure the RS485 transceiver correctly
   growattInterface.preTransmission ([]() {                   //Set function pointer via anonymous Lambda function
     obj->preTransmission();
