@@ -20,6 +20,25 @@ and
 * LoRaWAN Antenna
 * optional: RS485 Transceiver - 3.3V compatible, half-duplex capable (e.g [Waveshare 4777](https://www.waveshare.com/wiki/RS485_Board_(3.3V)) module)
 
+## Inverter Modbus Interface Options
+
+1. USB Interface
+
+    The inverter's USB port operates like a USB serial port (UART) interface at 115200 bits/s. If the length of a standard USB cable is sufficient to connect the ESP32 to the inverter (and there are no compatibility issues with the ESP32 board's USB serial interface), this is the easiest variant, because no extra hardware is needed.
+
+2. COM Interface
+
+    The inverter's COM port provides an RS485 interface at 9600 bits/s. An RS485 tranceiver is required to connect it to the ESP32.
+
+### Modbus Interface Select Input
+
+The desired interface is selected by pulling the GPIO pin `INTERFACE_SEL` (defined in `settings.h`) to 3.3V or GND, respectively:
+
+| Level | Modbus Interface Selection |
+| ----- | ---------------------------- |
+| low (GND) | USB Interface |
+| high (3.3V) | RS485 Interface |
+
 ## Power Supply
 
 The ESP32 development board can be powerd from the inverter's USB port **which only provides power if the inverter is active**.
@@ -41,6 +60,11 @@ But: Some ESP32 boards have an integrated LiPo battery charger. You could power 
 
 See [src/settings.h](https://github.com/matthias-bs/growatt2lorawan/blob/main/src/settings.h)
 
+| GPIO define | Description |
+| ----------- | ----------- |
+| INTERFACE_SEL | Modbus Interface Selection (USB/RS485) |
+
+### RS485 Interface Only!
 | GPIO define   | Waveshare 4777 pin  |
 | ------------- | ------------------- |
 | MAX485_DE     | RSE                 |
