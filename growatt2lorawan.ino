@@ -59,6 +59,8 @@
 //
 // 20230315 Created
 // 20230403 Implemented uplink messages with different ports and cycle times
+// 20230408 Modified debug output handling
+//          Added Modbus interface option over USB serial
 //
 //
 // Notes:
@@ -113,7 +115,7 @@
 #define _DEBUG_MODE_
 
 // Enable sleep mode - sleep after successful transmission to TTN (recommended!)
-//#define SLEEP_EN
+#define SLEEP_EN
 
 // Enable setting RTC from LoRaWAN network time
 #define GET_NETWORKTIME
@@ -242,15 +244,13 @@ const uint8_t PAYLOAD_SIZE = 51;
 #define EXTRA_INFO_MEM_SIZE 64
 
 // Debug printing
-#define DEBUG_PORT Serial
-#if defined(_DEBUG_MODE_)
-    #define DEBUG_PRINTF(...) { DEBUG_PORT.printf(__VA_ARGS__); }
-    #define DEBUG_PRINTF_TS(...) { DEBUG_PORT.printf("%d ms: ", osticks2ms(os_getTime())); \
-                                   DEBUG_PORT.printf(__VA_ARGS__); }
-#else
-    #define DEBUG_PRINTF(...) {}
-    #define DEBUG_PRINTF_TS(...) {}
-#endif
+// To enable debug mode (debug messages via serial port):
+// Arduino IDE: Tools->Core Debug Level: "Debug|Verbose"
+// or
+// set CORE_DEBUG_LEVEL in BresserWeatherSensorTTNCfg.h
+#define DEBUG_PORT Serial2
+#define DEBUG_PRINTF(...) { log_d(__VA_ARGS__); }
+#define DEBUG_PRINTF_TS(...) { log_d(__VA_ARGS__); }
 
 #if defined(GET_NETWORKTIME)
     void printDateTime(void);
@@ -320,7 +320,12 @@ public:
     uint16_t getVoltageBattery(void);
     uint16_t getVoltageSupply(void);
     bool     isUplinkPending(void) {
+        if (this->m_fBusy) {
+            log_d("Busy");
+            return true;          
+        }   
         for (int idx=0; idx<NUM_PORTS; idx++) {
+            log_d("m_fUplinkRequest[%d]=%d", idx, m_fUplinkRequest[idx]);
             if (m_fUplinkRequest[idx])
                 return true;
         }
@@ -378,8 +383,62 @@ cMyLoRaWAN myLoRaWAN {};
 // the global sensor instance
 cSensor mySensor {};
 
+class cMyEventLog: public Arduino_LoRaWAN::cEventLog {
+  public:
+    void printTx(uint32_t ts, std::uint8_t channel, std::uint8_t rps) const
+    {
+      if (CORE_DEBUG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG) {
+        char buf[64];
+        *buf = '\0';
+
+        sprintf(buf, "TX @%u ms: ch=%d rps=0x%02X (%s %s %s %s IH=%u)", 
+          ts,
+          channel, 
+          rps, 
+          getSfName(rps),
+          getBwName(rps),
+          getCrName(rps),
+          getCrcName(rps),
+          unsigned(getIh(rps))
+        );
+        DEBUG_PRINTF_TS("%s", buf);
+
+      }
+    }
+    
+    void printCh(HardwareSerial & serial, std::uint8_t channel) const
+    {
+        serial.print(" ch=");
+        serial.print(std::uint32_t(channel));
+    }
+
+    void printRps(HardwareSerial & serial, std::uint8_t rps) const
+    {
+      serial.print(F(" rps=0x")); printHex2(serial, rps);
+      serial.print(F(" (")); serial.print(getSfName(rps));
+      printSpace(serial); serial.print(getBwName(rps));
+      printSpace(serial); serial.print(getCrName(rps));
+      printSpace(serial); serial.print(getCrcName(rps));
+      serial.print(F(" IH=")); serial.print(unsigned(getIh(rps)));
+      serial.print(')');
+    }
+    
+    void printHex2(HardwareSerial & serial, unsigned v) const
+    {
+      v &= 0xff;
+      if (v < 16)
+        serial.print('0');
+      serial.print(v, HEX);
+    }
+
+    void printSpace(HardwareSerial & serial) const
+    {
+      serial.print(' ');
+    }
+};
+
 // the global event log instance
-Arduino_LoRaWAN::cEventLog myEventLog;
+cMyEventLog myEventLog;
 
 // The pin map. This form is convenient if the LMIC library
 // doesn't support your board and you don't want to add the
@@ -406,6 +465,7 @@ RTC_DATA_ATTR Arduino_LoRaWAN::SessionInfo    rtcSavedSessionInfo;
 RTC_DATA_ATTR size_t                          rtcSavedNExtraInfo;
 RTC_DATA_ATTR uint8_t                         rtcSavedExtraInfo[EXTRA_INFO_MEM_SIZE];
 RTC_DATA_ATTR bool                            runtimeExpired = 0;
+RTC_DATA_ATTR uint32_t                        tReference[NUM_PORTS] = { 0 };        // time of last uplink
 
 #if defined(GET_NETWORKTIME)
     RTC_DATA_ATTR time_t                      rtcLastClockSync = 0;     //!< timestamp of last RTC synchonization to network time
@@ -427,6 +487,8 @@ bool rtcSyncReq = false;
     /// Real time clock
     ESP32Time rtc;
 #endif
+
+bool modbusRS485; // Modbus interface select: 0 - USB / 1 - RS485
 
 /****************************************************************************\
 |
@@ -479,17 +541,30 @@ bool rtcSyncReq = false;
 \****************************************************************************/
 
 void setup() {
-    // set baud rate
-    Serial.begin(115200);
 
-    // wait for serial to be ready
-    //while (! Serial)
+    pinMode(INTERFACE_SEL, INPUT);
+    modbusRS485 = digitalRead(INTERFACE_SEL);
+    
+
+    // set baud rate
+    if (modbusRS485) {
+        Serial.begin(115200);
+        log_d("Modbus interface: RS485");
+    } else {
+        Serial.setDebugOutput(false);
+        DEBUG_PORT.begin(115200, SERIAL_8N1, DEBUG_RX, DEBUG_TX);
+        DEBUG_PORT.setDebugOutput(true);
+        log_d("Modbus interface: USB");
+    }
+    
+    // wait for DEBUG_PORT to be ready
+    //while (! DEBUG_PORT)
     //    yield();
     delay(500);
 
     sleepTimeout = sec2osticks(SLEEP_TIMEOUT_INITIAL);
 
-    DEBUG_PRINTF_TS("setup()\n");
+    DEBUG_PRINTF_TS("setup()");
 
     #if defined(GET_NETWORKTIME)
         // Set time zone
@@ -505,15 +580,15 @@ void setup() {
 
     // set up the log; do this first.
     myEventLog.setup();
-    DEBUG_PRINTF("myEventlog.setup() - done\n");
+    DEBUG_PRINTF("myEventlog.setup() - done");
 
     // set up the sensors.
     mySensor.setup();
-    DEBUG_PRINTF("mySensor.setup() - done\n");
+    DEBUG_PRINTF("mySensor.setup() - done");
 
     // set up lorawan.
     myLoRaWAN.setup();
-    DEBUG_PRINTF("myLoRaWAN.setup() - done\n");
+    DEBUG_PRINTF("myLoRaWAN.setup() - done");
 
     mySensor.uplinkRequest();
 }
@@ -532,8 +607,8 @@ void loop() {
 
     #ifdef FORCE_SLEEP
         if ((os_getTime() > sleepTimeout) & !rtcSyncReq) {
-            DEBUG_PRINTF_TS("Sleep timer expired!\n");
-            DEBUG_PRINTF("Shutdown()\n");
+            DEBUG_PRINTF_TS("Sleep timer expired!");
+            DEBUG_PRINTF("Shutdown()");
             runtimeExpired = true;
             myLoRaWAN.Shutdown();
             magicFlag1 = 0;
@@ -575,9 +650,7 @@ cMyLoRaWAN::setup() {
                     0,
                     // the print-out function
                     [](cEventLog::EventNode_t const *pEvent) -> void {
-                        Serial.print(F(" TX:"));
-                        myEventLog.printCh(std::uint8_t(pEvent->getData(0)));
-                        myEventLog.printRps(rps_t(pEvent->getData(1)));
+                        myEventLog.printTx(osticks2ms(pEvent->getTime()), std::uint8_t(pEvent->getData(0)), rps_t(pEvent->getData(1)));
                     }
                 );
             }
@@ -620,56 +693,60 @@ cMyLoRaWAN::NetJoin(
 // If enabled, the controller goes into deep sleep mode now.
 void
 cMyLoRaWAN::NetTxComplete(void) {
-    DEBUG_PRINTF_TS("NetTxComplete()\n");
+    DEBUG_PRINTF_TS("NetTxComplete()");
     #ifdef SLEEP_EN
         if (!mySensor.isUplinkPending()) {
-            DEBUG_PRINTF("Shutdown()\n");
+            DEBUG_PRINTF("Shutdown()");
             myLoRaWAN.Shutdown();
             ESP.deepSleep(SLEEP_INTERVAL * 1000000);
         }
     #endif
 }
 
-#ifdef _DEBUG_MODE_
 // Print session info for debugging
 void printSessionInfo(const cMyLoRaWAN::SessionInfo &Info)
 {
-    Serial.printf("Tag:\t\t%d\n", Info.V1.Tag);
-    Serial.printf("Size:\t\t%d\n", Info.V1.Size);
-    Serial.printf("Rsv2:\t\t%d\n", Info.V1.Rsv2);
-    Serial.printf("Rsv3:\t\t%d\n", Info.V1.Rsv3);
-    Serial.printf("NetID:\t\t0x%08X\n", Info.V1.NetID);
-    Serial.printf("DevAddr:\t0x%08X\n", Info.V1.DevAddr);
-    Serial.printf("NwkSKey:\t");
-    for (int i=0; i<15;i++) {
-      Serial.printf("%02X ", Info.V1.NwkSKey[i]);  
+    log_v("Tag:\t\t%d", Info.V1.Tag);
+    log_v("Size:\t\t%d", Info.V1.Size);
+    log_v("Rsv2:\t\t%d", Info.V1.Rsv2);
+    log_v("Rsv3:\t\t%d", Info.V1.Rsv3);
+    log_v("NetID:\t\t0x%08X", Info.V1.NetID);
+    log_v("DevAddr:\t0x%08X", Info.V1.DevAddr);
+    if (CORE_DEBUG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG) {
+        char buf[64];
+        *buf = '\0';
+        for (int i=0; i<15;i++) {
+            sprintf(&buf[strlen(buf)], "%02X ", Info.V1.NwkSKey[i]);
+        }
+        log_v("NwkSKey:\t\t%s", buf);
     }
-    Serial.printf("\n");
-    Serial.printf("AppSKey:\t");
-    for (int i=0; i<15;i++) {
-      Serial.printf("%02X ", Info.V1.AppSKey[i]);  
-    }
-    Serial.printf("\n");    
+    if (CORE_DEBUG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG) {
+        char buf[64];
+        *buf = '\0';
+        for (int i=0; i<15;i++) {
+            sprintf(&buf[strlen(buf)], "%02X ", Info.V1.AppSKey[i]);  
+        }
+        log_v("AppSKey:\t\t%s", buf);
+    }    
 }
 
 // Print session state for debugging
 void printSessionState(const cMyLoRaWAN::SessionState &State)
 {
-    Serial.printf("Tag:\t\t%d\n", State.V1.Tag);
-    Serial.printf("Size:\t\t%d\n", State.V1.Size);
-    Serial.printf("Region:\t\t%d\n", State.V1.Region);
-    Serial.printf("LinkDR:\t\t%d\n", State.V1.LinkDR);
-    Serial.printf("FCntUp:\t\t%d\n", State.V1.FCntUp);
-    Serial.printf("FCntDown:\t%d\n", State.V1.FCntDown);
-    Serial.printf("gpsTime:\t%d\n", State.V1.gpsTime);
-    Serial.printf("globalAvail:\t%d\n", State.V1.globalAvail);
-    Serial.printf("Rx2Frequency:\t%d\n", State.V1.Rx2Frequency);
-    Serial.printf("PingFrequency:\t%d\n", State.V1.PingFrequency);
-    Serial.printf("Country:\t%d\n", State.V1.Country);
-    Serial.printf("LinkIntegrity:\t%d\n", State.V1.LinkIntegrity);
+    log_v("Tag:\t\t%d", State.V1.Tag);
+    log_v("Size:\t\t%d", State.V1.Size);
+    log_v("Region:\t\t%d", State.V1.Region);
+    log_v("LinkDR:\t\t%d", State.V1.LinkDR);
+    log_v("FCntUp:\t\t%d", State.V1.FCntUp);
+    log_v("FCntDown:\t\t%d", State.V1.FCntDown);
+    log_v("gpsTime:\t\t%d", State.V1.gpsTime);
+    log_v("globalAvail:\t%d", State.V1.globalAvail);
+    log_v("Rx2Frequency:\t%d", State.V1.Rx2Frequency);
+    log_v("PingFrequency:\t%d", State.V1.PingFrequency);
+    log_v("Country:\t\t%d", State.V1.Country);
+    log_v("LinkIntegrity:\t%d", State.V1.LinkIntegrity);
     // There is more in it...
 }
-#endif
 
 // Save Info to ESP32's RTC RAM
 // if not possible, just do nothing and make sure you return false
@@ -686,7 +763,7 @@ cMyLoRaWAN::NetSaveSessionInfo(
     rtcSavedNExtraInfo = nExtraInfo;
     memcpy(rtcSavedExtraInfo, pExtraInfo, nExtraInfo);
     magicFlag2 = MAGIC2;
-    DEBUG_PRINTF_TS("NetSaveSessionInfo()\n");
+    DEBUG_PRINTF_TS("NetSaveSessionInfo()");
     #ifdef _DEBUG_MODE_
         printSessionInfo(Info);
     #endif
@@ -700,7 +777,7 @@ void
 cMyLoRaWAN::NetSaveSessionState(const SessionState &State) {
     rtcSavedSessionState = State;
     magicFlag1 = MAGIC1;
-    DEBUG_PRINTF_TS("NetSaveSessionState()\n");
+    DEBUG_PRINTF_TS("NetSaveSessionState()");
     #ifdef _DEBUG_MODE_
         printSessionState(State);
     #endif
@@ -712,13 +789,13 @@ bool
 cMyLoRaWAN::NetGetSessionState(SessionState &State) {
     if (magicFlag1 == MAGIC1) {
         State = rtcSavedSessionState;
-        DEBUG_PRINTF_TS("NetGetSessionState() - o.k.\n");
+        DEBUG_PRINTF_TS("NetGetSessionState() - o.k.");
         #ifdef _DEBUG_MODE_
             printSessionState(State);
         #endif
         return true;
     } else {
-        DEBUG_PRINTF_TS("NetGetSessionState() - failed\n");
+        DEBUG_PRINTF_TS("NetGetSessionState() - failed");
         return false;
     }
 }
@@ -741,7 +818,7 @@ cMyLoRaWAN::GetAbpProvisioningInfo(AbpProvisioningInfo *pAbpInfo) {
     if ((magicFlag1 != MAGIC1) || (magicFlag2 != MAGIC2)) {
          return false;
     }
-    DEBUG_PRINTF_TS("GetAbpProvisioningInfo()\n");
+    DEBUG_PRINTF_TS("GetAbpProvisioningInfo()");
 
     pAbpInfo->DevAddr = rtcSavedSessionInfo.V2.DevAddr;
     pAbpInfo->NetID   = rtcSavedSessionInfo.V2.NetID;
@@ -751,19 +828,22 @@ cMyLoRaWAN::GetAbpProvisioningInfo(AbpProvisioningInfo *pAbpInfo) {
     pAbpInfo->FCntUp   = state.V1.FCntUp;
     pAbpInfo->FCntDown = state.V1.FCntDown;
 
-    #ifdef _DEBUG_MODE_
-        Serial.printf("NwkSKey:\t");
+    if (CORE_DEBUG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG) {
+        char buf[64];
+        
+        *buf = '\0';
         for (int i=0; i<15;i++) {
-          Serial.printf("%02X ", pAbpInfo->NwkSKey[i]);  
+          sprintf(&buf[strlen(buf)], "%02X ", pAbpInfo->NwkSKey[i]);  
         }
-        Serial.printf("\n");
-        Serial.printf("AppSKey:\t");
+        log_v("NwkSKey:\t%s", buf);
+        
+        *buf = '\0';
         for (int i=0; i<15;i++) {
-          Serial.printf("%02X ", pAbpInfo->AppSKey[i]);  
+          sprintf(&buf[strlen(buf)], "%02X ", pAbpInfo->AppSKey[i]);  
         }
-        Serial.printf("\n");
-        Serial.printf("FCntUp: %d\n", state.V1.FCntUp);
-    #endif
+        log_v("AppSKey:\t%s", buf);
+        log_v("FCntUp:\t%d", state.V1.FCntUp);
+    }
     return true;
 }
 
@@ -866,14 +946,16 @@ cSensor::loop(void) {
     
 
     for (uint8_t idx=0; idx<NUM_PORTS; idx++) {
-        auto const deltaT = tNow - this->m_tReference[idx];
+        //auto const deltaT = tNow - this->m_tReference[idx];
+        auto const deltaT = tNow - tReference[idx];
         if (deltaT >= this->m_uplinkPeriodMs * UplinkSchedule[idx].mult) {
             // request an uplink
             this->m_fUplinkRequest[idx] = true;
 
             // keep trigger time locked to uplinkPeriod
             auto const advance = deltaT / this->m_uplinkPeriodMs;
-            this->m_tReference[idx] += advance * this->m_uplinkPeriodMs; 
+            //this->m_tReference[idx] += advance * this->m_uplinkPeriodMs;
+            tReference[idx] += advance * this->m_uplinkPeriodMs;
         }
 
         // if an uplink was requested, do it.
@@ -892,7 +974,7 @@ cSensor::getVoltageBattery(void)
 {
     const uint16_t voltage = 3850;
      
-    DEBUG_PRINTF("Battery Voltage = %dmV\n", voltage);
+    DEBUG_PRINTF("Battery Voltage = %dmV", voltage);
 
     return voltage;
 }
@@ -905,7 +987,7 @@ cSensor::getVoltageSupply(void)
 {
     const uint16_t voltage = 3300;
      
-    DEBUG_PRINTF("Supply Voltage = %dmV\n", voltage);
+    DEBUG_PRINTF("Supply Voltage = %dmV", voltage);
 
     return voltage;
 }
@@ -918,7 +1000,7 @@ cSensor::getTemperature(void)
 {
     const float temperature = 16.4;
     
-    DEBUG_PRINTF("Outdoor Air Temperature = %.1f°C\n", temperature);
+    DEBUG_PRINTF("Outdoor Air Temperature = %.1f°C", temperature);
     
     return temperature;
 }
@@ -931,12 +1013,12 @@ void
 cSensor::doUplink(int port) {
     // if busy uplinking, just skip
     if (this->m_fBusy) {
-        DEBUG_PRINTF_TS("doUplink(): busy\n");
+        DEBUG_PRINTF_TS("doUplink(): busy");
         return;
     }
     // if LMIC is busy, just skip
     if (LMIC.opmode & (OP_POLL | OP_TXDATA | OP_TXRXPEND)) {
-        DEBUG_PRINTF_TS("doUplink(): other operation in progress\n");    
+        DEBUG_PRINTF_TS("doUplink(): other operation in progress");    
         return;
     }
     
