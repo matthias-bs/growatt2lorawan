@@ -32,6 +32,7 @@
 // History:
 //
 // 20230314 Created
+// 20230409 Improved serial port reading reliability
 //
 // ToDo:
 // -
@@ -136,7 +137,7 @@ void get_payload(uint8_t port, LoraEncoder & encoder)
     uint8_t result;
     
     growattInterface.initGrowatt();
-
+    delay(500);
     /*
     if (!holdingregisters) {
       // Read the holding registers
@@ -147,41 +148,43 @@ void get_payload(uint8_t port, LoraEncoder & encoder)
     }
     */
     
-    result = growattInterface.ReadInputRegisters(NULL);
-    log_d("ReadInputRegisters: 0x%02x", result);
-    while (result == growattInterface.Continue) {
-        delay(1000);
+    int retries=0;
+    do {
         result = growattInterface.ReadInputRegisters(NULL);
         log_d("ReadInputRegisters: 0x%02x", result);
-    }
- 
-    encoder.writeUint8(result);
-    if (result == growattInterface.Success) {
-        if (port == 1) {
-            encoder.writeUint8(growattInterface.modbusdata.status);
-            encoder.writeUint8(growattInterface.modbusdata.faultcode);
-            encoder.writeRawFloat(growattInterface.modbusdata.pv1voltage);
-            encoder.writeRawFloat(growattInterface.modbusdata.pv1current);
-            encoder.writeRawFloat(growattInterface.modbusdata.pv1power);
-            encoder.writeRawFloat(growattInterface.modbusdata.outputpower);
-            encoder.writeRawFloat(growattInterface.modbusdata.gridvoltage);
-            encoder.writeRawFloat(growattInterface.modbusdata.gridfrequency);
-            
-        } else {
-            encoder.writeRawFloat(growattInterface.modbusdata.energytoday);      
-            encoder.writeRawFloat(growattInterface.modbusdata.energytotal);
-            encoder.writeRawFloat(growattInterface.modbusdata.totalworktime);
-            encoder.writeTemperature(growattInterface.modbusdata.tempinverter);
-            encoder.writeTemperature(growattInterface.modbusdata.tempipm);
-            encoder.writeRawFloat(growattInterface.modbusdata.pv1energytoday);
-            encoder.writeRawFloat(growattInterface.modbusdata.pv1energytotal);
-            
+        while (result == growattInterface.Continue) {
+            delay(1000);
+            result = growattInterface.ReadInputRegisters(NULL);
+            log_d("ReadInputRegisters: 0x%02x", result);
         }
+    
+        encoder.writeUint8(result);
+        if (result == growattInterface.Success) {
+            if (port == 1) {
+                encoder.writeUint8(growattInterface.modbusdata.status);
+                encoder.writeUint8(growattInterface.modbusdata.faultcode);
+                encoder.writeRawFloat(growattInterface.modbusdata.pv1voltage);
+                encoder.writeRawFloat(growattInterface.modbusdata.pv1current);
+                encoder.writeRawFloat(growattInterface.modbusdata.pv1power);
+                encoder.writeRawFloat(growattInterface.modbusdata.outputpower);
+                encoder.writeRawFloat(growattInterface.modbusdata.gridvoltage);
+                encoder.writeRawFloat(growattInterface.modbusdata.gridfrequency);
+                
+            } else {
+                encoder.writeRawFloat(growattInterface.modbusdata.energytoday);      
+                encoder.writeRawFloat(growattInterface.modbusdata.energytotal);
+                encoder.writeRawFloat(growattInterface.modbusdata.totalworktime);
+                encoder.writeTemperature(growattInterface.modbusdata.tempinverter);
+                encoder.writeTemperature(growattInterface.modbusdata.tempipm);
+                encoder.writeRawFloat(growattInterface.modbusdata.pv1energytoday);
+                encoder.writeRawFloat(growattInterface.modbusdata.pv1energytotal);
+                
+            }
 
-    } else if (result != growattInterface.Continue) {
-        String message = growattInterface.sendModbusError(result);
-        log_e("Error: %s", message.c_str());
-    
-    }
-    
+        } else if (result != growattInterface.Continue) {
+            String message = growattInterface.sendModbusError(result);
+            log_e("Error: %s", message.c_str());
+            delay(1000);
+        }
+    } while ((result != growattInterface.Success) && (++retries < MODBUS_RETRIES));
 }
