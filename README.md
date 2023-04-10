@@ -73,6 +73,9 @@ See [src/settings.h](https://github.com/matthias-bs/growatt2lorawan/blob/main/sr
 | MAX485_TX     | DI                  |
 
 ### Modbus via USB Interface and for Debugging only:
+
+USB-to-TTL converter, e.g. [AZ Delivery HW-598](https://www.az-delivery.de/en/products/hw-598-usb-auf-seriell-adapter-mit-cp2102-chip-und-kabel)
+
 | GPIO define | USB to TTL Converter |
 | ----------- | -------------------- | 
 | DEBUG_TX    | RXD                  |
