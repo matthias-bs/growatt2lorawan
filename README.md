@@ -74,8 +74,9 @@ See [src/settings.h](https://github.com/matthias-bs/growatt2lorawan/blob/main/sr
 
 ### Modbus via USB Interface and for Debugging only:
 | GPIO define | USB to TTL Converter |
-| DEBUG_TX |  |
-| DEBUG_RX | |
+| ----------- | -------------------- | 
+| DEBUG_TX    | RXD                  |
+| DEBUG_RX    | TXD / n.c.           |
 
 ## MQTT Integration and IoT MQTT Panel Example
 
