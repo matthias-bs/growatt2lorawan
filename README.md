@@ -64,13 +64,18 @@ See [src/settings.h](https://github.com/matthias-bs/growatt2lorawan/blob/main/sr
 | ----------- | ----------- |
 | INTERFACE_SEL | Modbus Interface Selection (USB/RS485) |
 
-### RS485 Interface Only!
+### Modbus via RS485 Interface Only:
 | GPIO define   | Waveshare 4777 pin  |
 | ------------- | ------------------- |
 | MAX485_DE     | RSE                 |
 | MAX485_RE_NEG | n.c.                |
 | MAX485_RX     | RO                  |
 | MAX485_TX     | DI                  |
+
+### Modbus via USB Interface and for Debugging only:
+| GPIO define | USB to TTL Converter |
+| DEBUG_TX |  |
+| DEBUG_RX | |
 
 ## MQTT Integration and IoT MQTT Panel Example
 
