@@ -72,7 +72,7 @@ See [src/settings.h](https://github.com/matthias-bs/growatt2lorawan/blob/main/sr
 | MAX485_RX     | RO                  |
 | MAX485_TX     | DI                  |
 
-### Debug Interface in case of using Modbus via USB (optional):
+### Debug Interface in case of using Modbus via USB Interface (optional):
 
 USB-to-TTL converter, e.g. [AZ Delivery HW-598](https://www.az-delivery.de/en/products/hw-598-usb-auf-seriell-adapter-mit-cp2102-chip-und-kabel)
 
