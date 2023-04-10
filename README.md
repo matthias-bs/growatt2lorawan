@@ -19,6 +19,7 @@ and
 * SX1276 (or compatible) LoRaWAN Radio Transceiver
 * LoRaWAN Antenna
 * optional: RS485 Transceiver - 3.3V compatible, half-duplex capable (e.g [Waveshare 4777](https://www.waveshare.com/wiki/RS485_Board_(3.3V)) module)
+* optional: USB-to-TTL converter for Debugging (e.g. [AZ Delivery HW-598](https://www.az-delivery.de/en/products/hw-598-usb-auf-seriell-adapter-mit-cp2102-chip-und-kabel))
 
 ## Inverter Modbus Interface Options
 
