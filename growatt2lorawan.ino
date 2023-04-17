@@ -115,7 +115,7 @@
 #define _DEBUG_MODE_
 
 // Enable sleep mode - sleep after successful transmission to TTN (recommended!)
-#define SLEEP_EN
+//#define SLEEP_EN
 
 // Enable setting RTC from LoRaWAN network time
 #define GET_NETWORKTIME
@@ -542,7 +542,7 @@ bool modbusRS485; // Modbus interface select: 0 - USB / 1 - RS485
 
 void setup() {
 
-    pinMode(INTERFACE_SEL, INPUT);
+    pinMode(INTERFACE_SEL, INPUT_PULLUP);
     modbusRS485 = digitalRead(INTERFACE_SEL);
     
 
@@ -1039,7 +1039,7 @@ cSensor::doUplink(int port) {
     #endif
     
     this->m_fBusy = true;
-    
+
     if (! myLoRaWAN.SendBuffer(
         loraData, encoder.getLength(),
         // this is the completion function:
