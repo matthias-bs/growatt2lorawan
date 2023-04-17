@@ -29,6 +29,8 @@ and
 1. USB Interface
 
     The inverter's USB port operates like a USB serial port (UART) interface at 115200 bits/s. If the length of a standard USB cable is sufficient to connect the ESP32 to the inverter (and there are no compatibility issues with the ESP32 board's USB serial interface), this is the easiest variant, because no extra hardware is needed.
+    
+    As pointed out in [otti/Growatt_ShineWiFi-S](https://github.com/otti/Growatt_ShineWiFi-S/blob/master/README.md), **only CH340-based USB-Serial converters are compatible** - converters with CP21XX and FTDI chips **do not work**!
 
 2. COM Interface
 
@@ -41,7 +43,7 @@ The desired interface is selected by pulling the GPIO pin `INTERFACE_SEL` (defin
 | Level | Modbus Interface Selection |
 | ----- | ---------------------------- |
 | low (GND) | USB Interface |
-| high (3.3V) | RS485 Interface |
+| high (3.3V/open) | RS485 Interface |
 
 ## Power Supply
 
