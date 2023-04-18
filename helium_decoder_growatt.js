@@ -50,10 +50,8 @@ function Decoder(bytes, port, uplink_info) {
         throw new Error('Modbus status must have exactly 4 bytes');
     }
     return {
-          modbus: {
-              code: bytes[0],
-              text: modbus_code[bytes[0]]
-          }
+          "code": bytes[0],
+          "text": modbus_code[bytes[0]]
       };
     };
     modbus.BYTES = 1;
@@ -219,7 +217,7 @@ function Decoder(bytes, port, uplink_info) {
     }
     
     if (bytes.length === 1) {
-        return modbus(bytes);
+        return {"modbus": modbus(bytes)};
     }
 
     
