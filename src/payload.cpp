@@ -152,39 +152,45 @@ void get_payload(uint8_t port, LoraEncoder & encoder)
     do {
         result = growattInterface.ReadInputRegisters(NULL);
         log_d("ReadInputRegisters: 0x%02x", result);
+        if ((result != growattInterface.Continue) && (result != growattInterface.Success)) {
+            String message = growattInterface.sendModbusError(result);
+            log_e("Error: %s", message.c_str());
+        }
         while (result == growattInterface.Continue) {
             delay(1000);
             result = growattInterface.ReadInputRegisters(NULL);
-            log_d("ReadInputRegisters: 0x%02x", result);
-        }
-    
-        encoder.writeUint8(result);
-        if (result == growattInterface.Success) {
-            if (port == 1) {
-                encoder.writeUint8(growattInterface.modbusdata.status);
-                encoder.writeUint8(growattInterface.modbusdata.faultcode);
-                encoder.writeRawFloat(growattInterface.modbusdata.pv1voltage);
-                encoder.writeRawFloat(growattInterface.modbusdata.pv1current);
-                encoder.writeRawFloat(growattInterface.modbusdata.pv1power);
-                encoder.writeRawFloat(growattInterface.modbusdata.outputpower);
-                encoder.writeRawFloat(growattInterface.modbusdata.gridvoltage);
-                encoder.writeRawFloat(growattInterface.modbusdata.gridfrequency);
-                
-            } else {
-                encoder.writeRawFloat(growattInterface.modbusdata.energytoday);      
-                encoder.writeRawFloat(growattInterface.modbusdata.energytotal);
-                encoder.writeRawFloat(growattInterface.modbusdata.totalworktime);
-                encoder.writeTemperature(growattInterface.modbusdata.tempinverter);
-                encoder.writeTemperature(growattInterface.modbusdata.tempipm);
-                encoder.writeRawFloat(growattInterface.modbusdata.pv1energytoday);
-                encoder.writeRawFloat(growattInterface.modbusdata.pv1energytotal);
-                
-            }
-
-        } else if (result != growattInterface.Continue) {
             String message = growattInterface.sendModbusError(result);
-            log_e("Error: %s", message.c_str());
-            delay(1000);
+            if (result != growattInterface.Continue && (result != growattInterface.Success)) {
+                log_e("Error: %s", message.c_str());
+                delay(1000);
+            } else {
+                log_d("%s", message.c_str());
+            }
         }
     } while ((result != growattInterface.Success) && (++retries < MODBUS_RETRIES));
+    
+    encoder.writeUint8(result);
+    if (result == growattInterface.Success) {
+        log_v("Port: %d", port);
+        if (port == 1) {
+            encoder.writeUint8(growattInterface.modbusdata.status);
+            encoder.writeUint8(growattInterface.modbusdata.faultcode);
+            encoder.writeRawFloat(growattInterface.modbusdata.pv1voltage);
+            encoder.writeRawFloat(growattInterface.modbusdata.pv1current);
+            encoder.writeRawFloat(growattInterface.modbusdata.pv1power);
+            encoder.writeRawFloat(growattInterface.modbusdata.outputpower);
+            encoder.writeRawFloat(growattInterface.modbusdata.gridvoltage);
+            encoder.writeRawFloat(growattInterface.modbusdata.gridfrequency);
+        
+        } else {
+            encoder.writeRawFloat(growattInterface.modbusdata.energytoday);      
+            encoder.writeRawFloat(growattInterface.modbusdata.energytotal);
+            encoder.writeRawFloat(growattInterface.modbusdata.totalworktime);
+            encoder.writeTemperature(growattInterface.modbusdata.tempinverter);
+            encoder.writeTemperature(growattInterface.modbusdata.tempipm);
+            encoder.writeRawFloat(growattInterface.modbusdata.pv1energytoday);
+            encoder.writeRawFloat(growattInterface.modbusdata.pv1energytotal);
+        
+        }
+    }
 }
