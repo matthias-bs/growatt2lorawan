@@ -1,6 +1,6 @@
 {
   "name": "growatt2lorawan",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "description": "LoRaWAN Node for Growatt PV-Inverter Modbus Data Interface",
   "main": "growatt2lorawan.ino",
   "frameworks": "arduino",
