@@ -61,7 +61,9 @@
 // 20230403 Implemented uplink messages with different ports and cycle times
 // 20230408 Modified debug output handling
 //          Added Modbus interface option over USB serial
-//
+// 20230417 Added pin config for TTGO LoRa32 V2.1
+// 20230420 Added pin config for
+//          DFRobot FireBeetle ESP32 + FireBeetle Cover LoRa 
 //
 // Notes:
 // - After a successful transmission, the controller can go into deep sleep
@@ -222,15 +224,30 @@ const Schedule UplinkSchedule[NUM_PORTS] = {
     #define PIN_LMIC_DIO2     cMyLoRaWAN::lmic_pinmap::LMIC_UNUSED_PIN
     #pragma message("ARDUINO_ADAFRUIT_FEATHER_ESP32 defined; assuming RFM95W FeatherWing will be used")
     #pragma message("Required wiring: A to RST, B to DIO1, D to DIO0, E to CS")
-    
-#else
+
+#elif defined(FIREBEETLE_COVER_LORA)
+    // https://wiki.dfrobot.com/FireBeetle_ESP32_IOT_Microcontroller(V3.0)__Supports_Wi-Fi_&_Bluetooth__SKU__DFR0478
+    // https://wiki.dfrobot.com/FireBeetle_Covers_LoRa_Radio_868MHz_SKU_TEL0125
+    #define PIN_LMIC_NSS      D4
+    #define PIN_LMIC_RST      D2
+    #define PIN_LMIC_DIO0     D3
+    #define PIN_LMIC_DIO1     D5
+    #define PIN_LMIC_DIO2     cMyLoRaWAN::lmic_pinmap::LMIC_UNUSED_PIN
+    #pragma message("FIREBEETLE_COVER_LORA defined; assuming FireBeetle ESP32 with FireBeetle Cover LoRa will be used")
+    #pragma message("Required wiring: D2 to RESET, D3 to DIO0, D4 to CS, D5 to DIO1")
+
+#elif defined(LORAWAN_NODE)
     // LoRaWAN_Node board
     // https://github.com/matthias-bs/LoRaWAN_Node
+    #pragma message("LORAWAN_NODE defined; assuming LoRaWAN_Node board will be used")
     #define PIN_LMIC_NSS      14
     #define PIN_LMIC_RST      12
     #define PIN_LMIC_DIO0     4
     #define PIN_LMIC_DIO1     16
     #define PIN_LMIC_DIO2     17
+
+#else
+    #pragma message("Unknown board; please select one in the Arduino IDE or in settings.h or create your own!")
 
 #endif
 
