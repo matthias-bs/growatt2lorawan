@@ -43,10 +43,13 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-// Both variants below are based on DFRobot FireBeetle ESP32
-//#define FIREBEETLE_COVER_LORA
-//#define LORAWAN_NODE
- 
+#if defined(ARDUINO_ESP32_DEV)
+    // Both variants below are based on DFRobot FireBeetle ESP32; 
+    // which uses the rather unspecific "ARDUINO_ESP32_DEV"
+    #define FIREBEETLE_COVER_LORA
+    //#define LORAWAN_NODE
+#endif
+
 //#define useModulPower   1
 
 //#define ENABLE_JSON
