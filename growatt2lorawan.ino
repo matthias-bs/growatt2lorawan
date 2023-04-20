@@ -248,6 +248,13 @@ const Schedule UplinkSchedule[NUM_PORTS] = {
 
 #else
     #pragma message("Unknown board; please select one in the Arduino IDE or in settings.h or create your own!")
+    
+    // definitions for generic CI target ESP32:ESP32:ESP32
+    #define PIN_LMIC_NSS      14
+    #define PIN_LMIC_RST      12
+    #define PIN_LMIC_DIO0     4
+    #define PIN_LMIC_DIO1     16
+    #define PIN_LMIC_DIO2     17
 
 #endif
 
