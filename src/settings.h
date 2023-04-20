@@ -95,4 +95,14 @@
     #define DEBUG_TX        5         // Serial port output to   USB converter (optional)
     #define DEBUG_RX        26        // Serial port input  from USB converter (n.c.)
 
+#else
+    // for generic CI target ESP32:ESP32:ESP32
+    #define INTERFACE_SEL   13        // Modbus interface select (0: USB / 1: RS485)
+    #define MAX485_DE       10        // D1, DE pin on the TTL to RS485 converter
+    #define MAX485_RE_NEG   2         // D2, RE pin on the TTL to RS485 converter
+    #define MAX485_RX       27        // D5, RO pin on the TTL to RS485 converter
+    #define MAX485_TX       9         // D6, DI pin on the TTL to RS485 converter
+    #define DEBUG_TX        5         // Serial port output to   USB converter (optional)
+    #define DEBUG_RX        26        // Serial port input  from USB converter (n.c.)
+
 #endif
