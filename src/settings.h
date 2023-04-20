@@ -77,11 +77,11 @@
     // https://wiki.dfrobot.com/FireBeetle_ESP32_IOT_Microcontroller(V3.0)__Supports_Wi-Fi_&_Bluetooth__SKU__DFR0478
     // https://wiki.dfrobot.com/FireBeetle_Covers_LoRa_Radio_868MHz_SKU_TEL0125
     #define INTERFACE_SEL   17        // Modbus interface select (0: USB / 1: RS485)
-    #define MAX485_DE       D6        // DE pin on the TTL to RS485 converter
-    #define MAX485_RE_NEG   D7        // RE pin on the TTL to RS485 converter
-    #define MAX485_RX       D8        // RO pin on the TTL to RS485 converter
-    #define MAX485_TX       D9        // DI pin on the TTL to RS485 converter
-    #define DEBUG_TX        04        // Serial port output to   USB converter
+    #define MAX485_DE       10        // D6, DE pin on the TTL to RS485 converter
+    #define MAX485_RE_NEG   13        // D7, RE pin on the TTL to RS485 converter
+    #define MAX485_RX       5         // D8, RO pin on the TTL to RS485 converter
+    #define MAX485_TX       2         // D9, DI pin on the TTL to RS485 converter
+    #define DEBUG_TX        4         // Serial port output to   USB converter
     #define DEBUG_RX        16        // Serial port input  from USB converter (n.c.)
         
 #elif defined(LORAWAN_NODE)
