@@ -95,20 +95,13 @@ USB-to-TTL converter, e.g. [AZ Delivery HW-598](https://www.az-delivery.de/en/pr
 
 ### Set up *IoT MQTT Panel* from configuration file
 
-You can either edit the provided [JSON configuration file](https://github.com/matthias-bs/Flora1/blob/main/10_mqtt_dashboard/IoTMQTTPanel_Example.json) before importing it or import it as-is and make the required changes in *IoT MQTT Panel*. Don't forget to add the broker's certificate if using Secure MQTT! (in the App: *Connections -> Edit Connections: Certificate path*.)
+You can either edit the provided [JSON configuration file](https://github.com/matthias-bs/growatt2lorawan/blob/main/IoT_MQTT_Panel_Growatt2LoRaWAN.json) before importing it or import it as-is and make the required changes in *IoT MQTT Panel*. Don't forget to add the broker's certificate if using Secure MQTT! (in the App: *Connections -> Edit Connections: Certificate path*.)
 
-**Editing [IoTMQTTPanel_Example.json](https://github.com/matthias-bs/Flora1/blob/main/10_mqtt_dashboard/IoTMQTTPanel_Example.json)**
+**Editing [IoT_MQTT_Panel_Growatt2LoRaWAN.json](https://github.com/matthias-bs/growatt2lorawan/blob/main/IoT_MQTT_Panel_Growatt2LoRaWAN.json)**
 
-At the beginning, replace the dummy IP address *123.345.678* and port *8883* by your MQTT broker's IP address/hostname and port, change *Your_Client_ID* and *Your_MQTT_Connection* as needed:
+Change *USERNAME* and *PASSWORD* as needed:
 ```
 [...]
-"connections":[{"autoConnect":true,"host":"123.345.678","port":8883,"clientId":"Your_Client_ID","connectionName":"Your_MQTT_Connection"
-[...]
-```
-
-At the end, change *Your_Username* and *Your_Password* as needed:
-```
-[...]
-"username":"Your_Username","password":"Your_Password"
+"username":"USERNAME","password":"PASSWORD"
 [...]
 ```
