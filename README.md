@@ -112,12 +112,3 @@ At the end, change *Your_Username* and *Your_Password* as needed:
 "username":"Your_Username","password":"Your_Password"
 [...]
 ```
-
-----
-**Changing example configuration in _IoT MQTT Panel_**
-
-**Edit _Connection Name_, _Client ID_ and _Broker_:**
-![Edit Connection Name, Client ID and Broker](https://github.com/matthias-bs/Flora1/blob/main/10_mqtt_dashboard/IoTMQTTPanel-Edit_Connection-1.png)
-
-**Edit _Username_ and _Password_:**
-![Edit Username and Password](https://github.com/matthias-bs/Flora1/blob/main/10_mqtt_dashboard/IoTMQTTPanel-Edit_Connection-2.png)
