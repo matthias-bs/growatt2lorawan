@@ -39,7 +39,9 @@
 //          Added Modbus interface option over USB serial
 // 20230417 Added pin config for TTGO LoRa32 V2.1
 // 20230420 Added pin config for
-//          DFRobot FireBeetle ESP32 + FireBeetle Cover LoRa 
+//          DFRobot FireBeetle ESP32 + FireBeetle Cover LoRa
+// 20230421 Added pin config for 
+//          Adafruit Feather ESP32 + LoRa Radio Featherwing
 //
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -94,6 +96,16 @@
     #define MAX485_TX       9         // D6, DI pin on the TTL to RS485 converter
     #define DEBUG_TX        5         // Serial port output to   USB converter (optional)
     #define DEBUG_RX        26        // Serial port input  from USB converter (n.c.)
+
+#elif defined(ARDUINO_FEATHER_ESP32)
+    // https://github.com/espressif/arduino-esp32/blob/master/variants/feather_esp32/pins_arduino.h
+    #define INTERFACE_SEL   13        // Modbus interface select (0: USB / 1: RS485)
+    #define MAX485_DE       14        // D1, DE pin on the TTL to RS485 converter
+    #define MAX485_RE_NEG   15        // D2, RE pin on the TTL to RS485 converter
+    #define MAX485_RX       22        // D5, RO pin on the TTL to RS485 converter
+    #define MAX485_TX       23        // D6, DI pin on the TTL to RS485 converter
+    #define DEBUG_TX        17        // Serial port output to   USB converter (optional)
+    #define DEBUG_RX        16        // Serial port input  from USB converter (n.c.)
 
 #else
     // for generic CI target ESP32:ESP32:ESP32
