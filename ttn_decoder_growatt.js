@@ -24,7 +24,7 @@ function ttn_decoder(bytes, port) {
 
     var modbus = function(bytes) {
     if (bytes.length !== modbus.BYTES) {
-        throw new Error('Modbus status must have exactly 4 bytes');
+        throw new Error('Modbus status must have exactly 1 byte');
     }
     return {
           modbus: {
