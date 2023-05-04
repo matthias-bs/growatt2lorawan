@@ -24,12 +24,12 @@ function Decoder(bytes, port) {
 
     var modbus = function(bytes) {
     if (bytes.length !== modbus.BYTES) {
-        throw new Error('Modbus status must have exactly 4 bytes');
+        throw new Error('Modbus status must have exactly 1 byte');
     }
     return {
           "code": bytes[0],
           "text": modbus_code[bytes[0]]
-      };
+    };
     };
     modbus.BYTES = 1;
     
@@ -204,7 +204,7 @@ function Decoder(bytes, port) {
             [modbus,       uint8,        uint8,          rawfloat,      rawfloat,     rawfloat, 
             rawfloat,      rawfloat,      rawfloat
             ],
-            ['modbus',     'status',     'faultcode',    'pv1voltage',  'pv1current', 'pv1power',
+            ['modbus',     'status',     'faultcode',    'energytoday', 'energytotal', 'totalworktime',
             'outputpower', 'gridvoltage', 'gridfrequency'
             ]
         );
@@ -214,10 +214,11 @@ function Decoder(bytes, port) {
             [ modbus,        rawfloat,      rawfloat,      rawfloat,         temperature,    temperature,
             rawfloat,         rawfloat
             ],
-            ['modbus',        'energytoday', 'energytotal', 'totalworktime',  'tempinverter', 'tempipm',
+            ['modbus',       'pv1voltage',  'pv1current',  'pv1power',       'tempinverter', 'tempipm',
             'pv1energytoday', 'pv1energytotal'
             ]
         );
     }
 
 }
+
