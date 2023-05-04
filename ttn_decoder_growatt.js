@@ -27,11 +27,9 @@ function ttn_decoder(bytes, port) {
         throw new Error('Modbus status must have exactly 1 byte');
     }
     return {
-          modbus: {
-              code: bytes[0],
-              text: modbus_code[bytes[0]]
-          }
-      };
+        "code": bytes[0],
+        "text": modbus_code[bytes[0]]
+    };    
     };
     modbus.BYTES = 1;
     
@@ -196,7 +194,7 @@ function ttn_decoder(bytes, port) {
     }
     
     if (bytes.length === 1) {
-        return modbus(bytes);
+        return {"modbus": modbus(bytes)};
     }
 
     
