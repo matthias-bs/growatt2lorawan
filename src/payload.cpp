@@ -33,6 +33,7 @@
 //
 // 20230314 Created
 // 20230409 Improved serial port reading reliability
+// 20230505 Reordered message contents between port 1 and 2
 //
 // ToDo:
 // -
@@ -66,16 +67,16 @@ void gen_payload(uint8_t port, LoraEncoder & encoder)
     if (port == 1) {
         encoder.writeUint8(status);
         encoder.writeUint8(faultcode);
-        encoder.writeRawFloat(pv1voltage);
-        encoder.writeRawFloat(pv1current);
-        encoder.writeRawFloat(pv1power);
+        encoder.writeRawFloat(energytoday);      
+        encoder.writeRawFloat(energytotal);
+        encoder.writeRawFloat(totalworktime);
         encoder.writeRawFloat(outputpower);
         encoder.writeRawFloat(gridvoltage);
         encoder.writeRawFloat(gridfrequency);
     } else {
-        encoder.writeRawFloat(energytoday);      
-        encoder.writeRawFloat(energytotal);
-        encoder.writeRawFloat(totalworktime);
+        encoder.writeRawFloat(pv1voltage);
+        encoder.writeRawFloat(pv1current);
+        encoder.writeRawFloat(pv1power);
         encoder.writeTemperature(tempinverter);
         encoder.writeTemperature(tempipm);
         encoder.writeRawFloat(pv1energytoday);
@@ -175,17 +176,17 @@ void get_payload(uint8_t port, LoraEncoder & encoder)
         if (port == 1) {
             encoder.writeUint8(growattInterface.modbusdata.status);
             encoder.writeUint8(growattInterface.modbusdata.faultcode);
-            encoder.writeRawFloat(growattInterface.modbusdata.pv1voltage);
-            encoder.writeRawFloat(growattInterface.modbusdata.pv1current);
-            encoder.writeRawFloat(growattInterface.modbusdata.pv1power);
+            encoder.writeRawFloat(growattInterface.modbusdata.energytoday);      
+            encoder.writeRawFloat(growattInterface.modbusdata.energytotal);
+            encoder.writeRawFloat(growattInterface.modbusdata.totalworktime);
             encoder.writeRawFloat(growattInterface.modbusdata.outputpower);
             encoder.writeRawFloat(growattInterface.modbusdata.gridvoltage);
             encoder.writeRawFloat(growattInterface.modbusdata.gridfrequency);
         
         } else {
-            encoder.writeRawFloat(growattInterface.modbusdata.energytoday);      
-            encoder.writeRawFloat(growattInterface.modbusdata.energytotal);
-            encoder.writeRawFloat(growattInterface.modbusdata.totalworktime);
+            encoder.writeRawFloat(growattInterface.modbusdata.pv1voltage);
+            encoder.writeRawFloat(growattInterface.modbusdata.pv1current);
+            encoder.writeRawFloat(growattInterface.modbusdata.pv1power);
             encoder.writeTemperature(growattInterface.modbusdata.tempinverter);
             encoder.writeTemperature(growattInterface.modbusdata.tempipm);
             encoder.writeRawFloat(growattInterface.modbusdata.pv1energytoday);
