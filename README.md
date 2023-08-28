@@ -49,7 +49,7 @@ The desired interface is selected by pulling the GPIO pin `INTERFACE_SEL` (defin
 
 ## Power Supply
 
-The ESP32 development board can be powerd from the inverter's USB port **which only provides power if the inverter is active**.
+The ESP32 development board can be powered from the inverter's USB port **which only provides power if the inverter is active**.
 
 **No sun - no power - no transmission!** :sunglasses:
 
