@@ -63,7 +63,8 @@
 //          Added Modbus interface option over USB serial
 // 20230417 Added pin config for TTGO LoRa32 V2.1
 // 20230420 Added pin config for
-//          DFRobot FireBeetle ESP32 + FireBeetle Cover LoRa 
+//          DFRobot FireBeetle ESP32 + FireBeetle Cover LoRa
+// 20231009 Renamed FIREBEETLE_COVER_LORA in FIREBEETLE_ESP32_COVER_LORA
 //
 // Notes:
 // - After a successful transmission, the controller can go into deep sleep
@@ -99,6 +100,7 @@
 #include <Arduino_LoRaWAN_network.h>
 #include <Arduino_LoRaWAN_EventLog.h>
 #include <arduino_lmic.h>
+#include <Preferences.h>
 #include "src/settings.h"
 #include "src/payload.h"
 
@@ -149,6 +151,9 @@ const Schedule UplinkSchedule[NUM_PORTS] = {
 // If SLEEP_EN is defined, MCU will sleep for SLEEP_INTERVAL seconds after succesful transmission
 #define SLEEP_INTERVAL 360
 
+// Long sleep interval, MCU will sleep for SLEEP_INTERVAL_LONG seconds if battery voltage is below BATTERY_WEAK
+#define SLEEP_INTERVAL_LONG 900
+
 // Force deep sleep after a certain time, even if transmission was not completed
 //#define FORCE_SLEEP
 
@@ -157,6 +162,9 @@ const Schedule UplinkSchedule[NUM_PORTS] = {
 
 // If already joined, force deep sleep after SLEEP_TIMEOUT_JOINED seconds (if enabled)
 #define SLEEP_TIMEOUT_JOINED 600
+
+// Additional timeout to be applied after joining if Network Time Request pending
+#define SLEEP_TIMEOUT_EXTRA 300
 
 //-----------------------------------------------------------------------------
 
@@ -198,8 +206,9 @@ const Schedule UplinkSchedule[NUM_PORTS] = {
     #define PIN_LMIC_DIO1     LORA_D1
     #define PIN_LMIC_DIO2     LORA_D2
 
-#elif defined(ARDUINO_heltec_wireless_stick)
+#elif defined(ARDUINO_heltec_wireless_stick) || defined(ARDUINO_heltec_wifi_lora_32_V2)
     // https://github.com/espressif/arduino-esp32/blob/master/variants/heltec_wireless_stick/pins_arduino.h
+    // https://github.com/espressif/arduino-esp32/tree/master/variants/heltec_wifi_lora_32_V2/pins_ardiono.h
     #define PIN_LMIC_NSS      SS
     #define PIN_LMIC_RST      RST_LoRa
     #define PIN_LMIC_DIO0     DIO0
@@ -222,10 +231,11 @@ const Schedule UplinkSchedule[NUM_PORTS] = {
     #define PIN_LMIC_DIO0     32
     #define PIN_LMIC_DIO1     33
     #define PIN_LMIC_DIO2     cMyLoRaWAN::lmic_pinmap::LMIC_UNUSED_PIN
+    #pragma message("NOT TESTED!!!")
     #pragma message("ARDUINO_ADAFRUIT_FEATHER_ESP32 defined; assuming RFM95W FeatherWing will be used")
     #pragma message("Required wiring: A to RST, B to DIO1, D to DIO0, E to CS")
 
-#elif defined(FIREBEETLE_COVER_LORA)
+#elif defined(FIREBEETLE_ESP32_COVER_LORA)
     // https://wiki.dfrobot.com/FireBeetle_ESP32_IOT_Microcontroller(V3.0)__Supports_Wi-Fi_&_Bluetooth__SKU__DFR0478
     // https://wiki.dfrobot.com/FireBeetle_Covers_LoRa_Radio_868MHz_SKU_TEL0125
     #define PIN_LMIC_NSS      27 // D4
@@ -233,7 +243,7 @@ const Schedule UplinkSchedule[NUM_PORTS] = {
     #define PIN_LMIC_DIO0     26 // D3
     #define PIN_LMIC_DIO1      9 // D5
     #define PIN_LMIC_DIO2     cMyLoRaWAN::lmic_pinmap::LMIC_UNUSED_PIN
-    #pragma message("FIREBEETLE_COVER_LORA defined; assuming FireBeetle ESP32 with FireBeetle Cover LoRa will be used")
+    #pragma message("FIREBEETLE_ESP32_COVER_LORA defined; assuming FireBeetle ESP32 with FireBeetle Cover LoRa will be used")
     #pragma message("Required wiring: D2 to RESET, D3 to DIO0, D4 to CS, D5 to DIO1")
 
 #elif defined(LORAWAN_NODE)
@@ -276,6 +286,70 @@ const uint8_t PAYLOAD_SIZE = 51;
 #define DEBUG_PRINTF(...) { log_d(__VA_ARGS__); }
 #define DEBUG_PRINTF_TS(...) { log_d(__VA_ARGS__); }
 
+// Downlink messages
+// ------------------
+//
+// CMD_SET_WEATHERSENSOR_TIMEOUT
+// (seconds)
+// byte0: 0xA0
+// byte1: ws_timeout[ 7: 0]
+//
+// CMD_SET_SLEEP_INTERVAL
+// (seconds)
+// byte0: 0xA8
+// byte1: sleep_interval[15:8]
+// byte2: sleep_interval[ 7:0]
+
+// CMD_SET_SLEEP_INTERVAL_LONG
+// (seconds)
+// byte0: 0xA9
+// byte1: sleep_interval_long[15:8]
+// byte2: sleep_interval_long[ 7:0]
+//
+// CMD_GET_CONFIG
+// byte0: 0xB1
+//
+// CMD_GET_DATETIME
+// byte0: 0x86
+//
+// CMD_SET_DATETIME
+// byte0: 0x88
+// byte1: unixtime[31:24]
+// byte2: unixtime[23:16]
+// byte3: unixtime[15: 8]
+// byte4: unixtime[ 7: 0]
+//
+// CMD_GET_INVERTER_SETTINGS
+// byte0: 0xC0
+//
+// Response uplink messages
+// -------------------------
+//
+// CMD_GET_DATETIME -> FPort=3
+// byte0: unixtime[31:24]
+// byte1: unixtime[23:16]
+// byte2: unixtime[15: 8]
+// byte3: unixtime[ 7: 0]
+// byte4: rtc_source[ 7: 0]
+//
+// CMD_GET_CONFIG -> FPort=4
+// byte0: reserved[ 7: 0]
+// byte1: sleep_interval[15: 8]
+// byte2: sleep_interval[ 7:0]
+// byte3: sleep_interval_long[15:8]
+// byte4: sleep_interval_long[ 7:0]
+//
+// CMD_GET_INVERTER_SETTINGS -> FPort=5
+// TBD
+
+#define CMD_SET_SLEEP_INTERVAL          0xA8
+#define CMD_SET_SLEEP_INTERVAL_LONG     0xA9
+#define CMD_GET_CONFIG                  0xB1
+#define CMD_GET_DATETIME                0x86
+#define CMD_SET_DATETIME                0x88
+#define CMD_GET_INVERTER_SETTINGS       0xC0
+
+
 #if defined(GET_NETWORKTIME)
     void printDateTime(void);
 #endif
@@ -286,12 +360,24 @@ const uint8_t PAYLOAD_SIZE = 51;
 |
 \****************************************************************************/
 
+/*!
+ * \class cMyLoRaWAN
+ * 
+ * \brief The LoRaWAN object - LoRaWAN protocol and session handling
+ */ 
 class cMyLoRaWAN : public Arduino_LoRaWAN_network {
 public:
     cMyLoRaWAN() {};
     using Super = Arduino_LoRaWAN_network;
+    
+    /*!
+     * \fn setup
+     * 
+     * \brief Initialize cMyLoRaWAN object
+     */
     void setup();
     
+
     #if defined(GET_NETWORKTIME)
         /*!
          * \fn requestNetworkTime
@@ -309,6 +395,40 @@ private:
       return nullptr;
     };
 */
+
+
+    /*!
+     * \fn printSessionInfo
+     * 
+     * \brief Print contents of session info data structure for debugging
+     * 
+     * \param Info Session information data structure
+     */
+    void printSessionInfo(const SessionInfo &Info);
+    
+    
+    /*!
+     * \fn printSessionState
+     * 
+     * \brief Print contents of session state data structure for debugging
+     * 
+     * \param State Session state data structure
+     */
+    void printSessionState(const SessionState &State);
+
+   /*!
+      * \fn doCfgUplink
+     *
+     * \brief Uplink configuration/status
+     */
+    void doCfgUplink(void);
+
+    bool isBusy(void) {
+      return m_fBusy;
+    }
+    
+private:
+    bool m_fBusy;                       // set true while sending an uplink
 
 protected:
     // you'll need to provide implementation for this.
@@ -334,6 +454,11 @@ protected:
 |
 \****************************************************************************/
 
+/*!
+ * \class cSensor
+ * 
+ * \brief The sensor object - collect sensor data and schedule uplink
+ */
 class cSensor {
 public:
     /// \brief the constructor. Deliberately does very little.
@@ -359,22 +484,27 @@ public:
     void uplinkRequest(void) {
         m_fUplinkRequest[0] = true;
     };
-    ///
-    /// \brief set up the sensor object
-    ///
-    /// \param uplinkPeriodMs optional uplink interval. If not specified,
-    ///         transmit every six minutes.
-    ///
+    
+    /*!
+     * \brief set up the sensor object
+     *
+     * \param uplinkPeriodMs optional uplink interval. If not specified,
+     *                       transmit every six minutes.
+     */
     void setup(std::uint32_t uplinkPeriodMs = 6 * 60 * 1000);
 
-    ///
-    /// \brief update sensor loop.
-    ///
-    /// \details
-    ///     This should be called from the global loop(); it periodically
-    ///     gathers and transmits sensor data.
-    ///
+    /*!
+     * \brief update sensor loop.
+     *
+     * \details
+     *     This should be called from the global loop(); it periodically
+     *     gathers and transmits sensor data.
+     */
     void loop();
+
+    bool isBusy(void) {
+      return m_fBusy;
+    }
 
     // Example sensor status flags
     bool data_ok;               //<! sensor data validation
@@ -388,11 +518,11 @@ public:
 private:
     void doUplink(int port);
 
-    bool m_fUplinkRequest[NUM_PORTS];             // set true when uplink is requested
-    bool m_fBusy;                                 // set true while sending an uplink
-    std::uint32_t m_uplinkPeriodMs;               // uplink period in milliseconds
-    std::uint8_t const m_uplinkPeriodMult[NUM_PORTS] = UPLINK_PERIOD_MULTIPLIERS;  // uplink period multiplier per port 
-    std::uint32_t m_tReference[NUM_PORTS];        // time of last uplink
+    bool m_fUplinkRequest[NUM_PORTS];             //!< set true when uplink is requested
+    bool m_fBusy;                                 //!< set true while sending an uplink
+    std::uint32_t m_uplinkPeriodMs;               //!< uplink period in milliseconds
+    std::uint8_t const m_uplinkPeriodMult[NUM_PORTS] = UPLINK_PERIOD_MULTIPLIERS;  //!< uplink period multiplier per port 
+    std::uint32_t m_tReference[NUM_PORTS];        //!< time of last uplink
 };
 
 /****************************************************************************\
@@ -462,7 +592,7 @@ class cMyEventLog: public Arduino_LoRaWAN::cEventLog {
 };
 
 // the global event log instance
-cMyEventLog myEventLog;
+Arduino_LoRaWAN::cEventLog myEventLog;
 
 // The pin map. This form is convenient if the LMIC library
 // doesn't support your board and you don't want to add the
@@ -477,34 +607,50 @@ const cMyLoRaWAN::lmic_pinmap myPinMap = {
      .rxtx_rx_active = 0,
      .rssi_cal = 0,
      .spi_freq = 8000000,
+     .pConfig = NULL
 };
 
 
 // The following variables are stored in the ESP32's RTC RAM -
 // their value is retained after a Sleep Reset.
-RTC_DATA_ATTR uint32_t                        magicFlag1;
-RTC_DATA_ATTR Arduino_LoRaWAN::SessionState   rtcSavedSessionState;
-RTC_DATA_ATTR uint32_t                        magicFlag2;
-RTC_DATA_ATTR Arduino_LoRaWAN::SessionInfo    rtcSavedSessionInfo;
-RTC_DATA_ATTR size_t                          rtcSavedNExtraInfo;
-RTC_DATA_ATTR uint8_t                         rtcSavedExtraInfo[EXTRA_INFO_MEM_SIZE];
-RTC_DATA_ATTR bool                            runtimeExpired = 0;
-RTC_DATA_ATTR uint32_t                        tReference[NUM_PORTS] = { 0 };        // time of last uplink
+RTC_DATA_ATTR uint32_t                        magicFlag1;           //!< flag for validating Session State in RTC RAM 
+RTC_DATA_ATTR Arduino_LoRaWAN::SessionState   rtcSavedSessionState; //!< Session State saved in RTC RAM
+RTC_DATA_ATTR uint32_t                        magicFlag2;           //!< flag for validating Session Info in RTC RAM 
+RTC_DATA_ATTR Arduino_LoRaWAN::SessionInfo    rtcSavedSessionInfo;  //!< Session Info saved in RTC RAM
+RTC_DATA_ATTR size_t                          rtcSavedNExtraInfo;   //!< size of extra Session Info data
+RTC_DATA_ATTR uint8_t                         rtcSavedExtraInfo[EXTRA_INFO_MEM_SIZE];   //!< extra Session Info data
+RTC_DATA_ATTR bool                            runtimeExpired = false;   //!< flag indicating if runtime has expired at least once
+RTC_DATA_ATTR uint32_t                        tReference[NUM_PORTS] = { 0 };        //!< time of last uplink
+RTC_DATA_ATTR bool                            longSleep;                //!< last sleep interval; 0 - normal / 1 - long
 
 #if defined(GET_NETWORKTIME)
     RTC_DATA_ATTR time_t                      rtcLastClockSync = 0;     //!< timestamp of last RTC synchonization to network time
 #endif
 
-// Uplink payload buffer
+/// Uplink payload buffer
 static uint8_t loraData[PAYLOAD_SIZE];
+/// ESP32 preferences (stored in flash memory)
+Preferences preferences;
 
-// Force sleep mode after <sleepTimeout> has been reached (if FORCE_SLEEP is defined) 
+struct sPrefs {
+uint16_t  sleep_interval;       //!< preferences: sleep interval
+uint16_t  sleep_interval_long;  //!< preferences: sleep interval long
+} prefs;
+
+/// Force sleep mode after <sleepTimeout> has been reached (if FORCE_SLEEP is defined) 
 ostime_t sleepTimeout;
 
 /// RTC sync request flag - set (if due) in setup() / cleared in UserRequestNetworkTimeCb()
 bool rtcSyncReq = false;
 
+    /// Sleep request
+    bool sleepReq = false;
+
+    /// Uplink request - command received via downlink
+    uint8_t uplinkReq = 0;
 #if defined(GET_NETWORKTIME)
+
+
     /// Seconds since the UTC epoch
     uint32_t userUTCTime;
 
@@ -512,7 +658,8 @@ bool rtcSyncReq = false;
     ESP32Time rtc;
 #endif
 
-bool modbusRS485; // Modbus interface select: 0 - USB / 1 - RS485
+/// Modbus interface select: 0 - USB / 1 - RS485
+bool modbusRS485;
 
 /****************************************************************************\
 |
@@ -547,13 +694,13 @@ bool modbusRS485; // Modbus interface select: 0 - USB / 1 - RS485
     // The following constants should be copied to secrets.h and configured appropriately
     // according to the settings from TTN Console
     
-    // deveui, little-endian (lsb first)
+    /// deveui, little-endian (lsb first)
     static const std::uint8_t deveui[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
     
-    // appeui, little-endian (lsb first)
+    /// appeui, little-endian (lsb first)
     static const std::uint8_t appeui[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
     
-    // appkey: just a string of bytes, sometimes referred to as "big endian".
+    /// appkey: just a string of bytes, sometimes referred to as "big endian".
     static const std::uint8_t appkey[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 #endif
 
@@ -564,6 +711,7 @@ bool modbusRS485; // Modbus interface select: 0 - USB / 1 - RS485
 |
 \****************************************************************************/
 
+/// Arduino setup
 void setup() {
 
     pinMode(INTERFACE_SEL, INPUT_PULLUP);
@@ -585,10 +733,17 @@ void setup() {
     //while (! DEBUG_PORT)
     //    yield();
     delay(500);
+   
+    preferences.begin("GROWATT2LORAWAN", false);
+    prefs.sleep_interval      = preferences.getUShort("sleep_interval", SLEEP_INTERVAL);
+    log_d("Preferences: sleep_interval:        %u s", prefs.sleep_interval);
+    prefs.sleep_interval_long = preferences.getUShort("sleep_interval_long", SLEEP_INTERVAL_LONG);
+    log_d("Preferences: sleep_interval_long:   %u s", prefs.sleep_interval_long);
+    preferences.end();
 
     sleepTimeout = sec2osticks(SLEEP_TIMEOUT_INITIAL);
 
-    DEBUG_PRINTF_TS("setup()");
+    DEBUG_PRINTF_TS("");
 
     #if defined(GET_NETWORKTIME)
         // Set time zone
@@ -623,11 +778,17 @@ void setup() {
 |
 \****************************************************************************/
 
+/// Arduino execution loop
 void loop() {
     // the order of these is arbitrary, but you must poll them all.
     myLoRaWAN.loop();
     mySensor.loop();
     myEventLog.loop();
+
+    if (uplinkReq != 0) {
+      myLoRaWAN.doCfgUplink();
+    }
+
 
     #ifdef FORCE_SLEEP
         if ((os_getTime() > sleepTimeout) & !rtcSyncReq) {
@@ -648,6 +809,70 @@ void loop() {
 |
 \****************************************************************************/
 
+// Receive and process downlink messages
+void ReceiveCb(
+    void *pCtx,
+    uint8_t uPort,
+    const uint8_t *pBuffer,
+    size_t nBuffer) {
+            
+    uplinkReq = 0;
+    log_v("Port: %d", uPort);
+    char buf[255];
+    *buf = '\0';
+
+    if (uPort > 0) {
+        for (int i = 0; i < nBuffer; i++) {
+              sprintf(&buf[strlen(buf)], "%02X ", pBuffer[i]);
+        }
+        log_v("Data: %s", buf);
+
+        if ((pBuffer[0] == CMD_GET_DATETIME) && (nBuffer == 1)) {
+            log_d("Get date/time");
+            uplinkReq = CMD_GET_DATETIME;
+        }
+        if ((pBuffer[0] == CMD_GET_CONFIG) && (nBuffer == 1)) {
+            log_d("Get config");
+            uplinkReq = CMD_GET_CONFIG; 
+        }
+        if ((pBuffer[0] == CMD_GET_INVERTER_SETTINGS) && (nBuffer == 1)) {
+            log_d("Get inverter settings");
+            uplinkReq = CMD_GET_INVERTER_SETTINGS;
+        }
+        if ((pBuffer[0] == CMD_SET_DATETIME) && (nBuffer == 5)) {
+            
+            time_t set_time = pBuffer[4] | (pBuffer[3] << 8) | (pBuffer[2] << 16) | (pBuffer[1] << 24);
+            rtc.setTime(set_time);
+            rtcLastClockSync = rtc.getLocalEpoch();
+            #if CORE_DEBUG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
+                char tbuf[25];
+                struct tm timeinfo;
+           
+                localtime_r(&set_time, &timeinfo);
+                strftime(tbuf, 25, "%Y-%m-%d %H:%M:%S", &timeinfo);
+                log_d("Set date/time: %s", tbuf);
+            #endif
+        }
+        if ((pBuffer[0] == CMD_SET_SLEEP_INTERVAL) && (nBuffer == 3)){
+            prefs.sleep_interval = pBuffer[2] | (pBuffer[1] << 8);
+            log_d("Set sleep_interval: %u s", prefs.sleep_interval);
+            preferences.begin("BWS-TTN", false);
+            preferences.putUShort("sleep_interval", prefs.sleep_interval);
+            preferences.end();            
+        }
+        if ((pBuffer[0] == CMD_SET_SLEEP_INTERVAL_LONG) && (nBuffer == 3)){
+            prefs.sleep_interval_long = pBuffer[2] | (pBuffer[1] << 8);
+            log_d("Set sleep_interval_long: %u s", prefs.sleep_interval_long);
+            preferences.begin("BWS-TTN", false);
+            preferences.putUShort("sleep_interval", prefs.sleep_interval_long);
+            preferences.end();            
+        }
+    }
+    if (uplinkReq == 0) {
+        sleepReq = true;
+    }
+}
+
 // our setup routine does the class setup and then registers an event handler so
 // we can see some interesting things
 void
@@ -658,6 +883,9 @@ cMyLoRaWAN::setup() {
 
 //    LMIC_selectSubBand(0);
     LMIC_setClockError(MAX_CLOCK_ERROR * 1 / 100);
+
+
+   this->SetReceiveBufferBufferCb(ReceiveCb);
 
     this->RegisterListener(
         // use a lambda so we're "inside" the cMyLoRaWAN from public/private perspective
@@ -674,7 +902,22 @@ cMyLoRaWAN::setup() {
                     0,
                     // the print-out function
                     [](cEventLog::EventNode_t const *pEvent) -> void {
-                        myEventLog.printTx(osticks2ms(pEvent->getTime()), std::uint8_t(pEvent->getData(0)), rps_t(pEvent->getData(1)));
+                        #if CORE_DEBUG_LEVEL >= ARDUHAL_LOG_LEVEL_INFO
+                            //rps_t _rps = rps_t(pEvent->getData(1));
+                            //Serial.printf("rps (1): %02X\n", _rps);
+                            uint8_t rps = pEvent->getData(1);
+                            uint32_t tstamp = osticks2ms(pEvent->getTime());
+                        #endif
+                        // see MCCI_Arduino_LoRaWAN_Library/src/lib/arduino_lorawan_cEventLog.cpp
+                        log_i("TX @%u ms: ch=%d rps=0x%02x (%s %s %s %s IH=%d)", 
+                            tstamp,
+                            std::uint8_t(pEvent->getData(0)),
+                            rps,
+                            myEventLog.getSfName(rps),
+                            myEventLog.getBwName(rps),
+                            myEventLog.getCrName(rps),
+                            myEventLog.getCrcName(rps),
+                            unsigned(getIh(rps)));    
                     }
                 );
             }
@@ -709,33 +952,31 @@ cMyLoRaWAN::GetOtaaProvisioningInfo(
 void
 cMyLoRaWAN::NetJoin(
     void) {
-    DEBUG_PRINTF_TS("NetJoin()\n");
+    DEBUG_PRINTF_TS("");
     sleepTimeout = os_getTime() + sec2osticks(SLEEP_TIMEOUT_JOINED);
+if (rtcSyncReq) {
+        // Allow additional time for completing Network Time Request
+        sleepTimeout += os_getTime() + sec2osticks(SLEEP_TIMEOUT_EXTRA);
+    }
 }
 
 // This method is called after transmission has been completed.
 // If enabled, the controller goes into deep sleep mode now.
 void
 cMyLoRaWAN::NetTxComplete(void) {
-    DEBUG_PRINTF_TS("NetTxComplete()");
-    #ifdef SLEEP_EN
-        if (!mySensor.isUplinkPending()) {
-            DEBUG_PRINTF("Shutdown()");
-            myLoRaWAN.Shutdown();
-            ESP.deepSleep(SLEEP_INTERVAL * 1000000);
-        }
-    #endif
+    DEBUG_PRINTF_TS("");
 }
 
 // Print session info for debugging
-void printSessionInfo(const cMyLoRaWAN::SessionInfo &Info)
+void 
+cMyLoRaWAN::printSessionInfo(const SessionInfo &Info)
 {
     log_v("Tag:\t\t%d", Info.V1.Tag);
     log_v("Size:\t\t%d", Info.V1.Size);
     log_v("Rsv2:\t\t%d", Info.V1.Rsv2);
     log_v("Rsv3:\t\t%d", Info.V1.Rsv3);
     log_v("NetID:\t\t0x%08X", Info.V1.NetID);
-    log_v("DevAddr:\t0x%08X", Info.V1.DevAddr);
+    log_v("DevAddr:\t\t0x%08X", Info.V1.DevAddr);
     if (CORE_DEBUG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG) {
         char buf[64];
         *buf = '\0';
@@ -755,7 +996,8 @@ void printSessionInfo(const cMyLoRaWAN::SessionInfo &Info)
 }
 
 // Print session state for debugging
-void printSessionState(const cMyLoRaWAN::SessionState &State)
+void
+cMyLoRaWAN::printSessionState(const SessionState &State)
 {
     log_v("Tag:\t\t%d", State.V1.Tag);
     log_v("Size:\t\t%d", State.V1.Size);
@@ -772,6 +1014,7 @@ void printSessionState(const cMyLoRaWAN::SessionState &State)
     // There is more in it...
 }
 
+
 // Save Info to ESP32's RTC RAM
 // if not possible, just do nothing and make sure you return false
 // from NetGetSessionState().
@@ -787,11 +1030,12 @@ cMyLoRaWAN::NetSaveSessionInfo(
     rtcSavedNExtraInfo = nExtraInfo;
     memcpy(rtcSavedExtraInfo, pExtraInfo, nExtraInfo);
     magicFlag2 = MAGIC2;
-    DEBUG_PRINTF_TS("NetSaveSessionInfo()");
+    DEBUG_PRINTF_TS("");
     #ifdef _DEBUG_MODE_
         printSessionInfo(Info);
     #endif
 }
+
 
 // Save State in RTC RAM. Note that it's often the same;
 // often only the frame counters change.
@@ -801,7 +1045,7 @@ void
 cMyLoRaWAN::NetSaveSessionState(const SessionState &State) {
     rtcSavedSessionState = State;
     magicFlag1 = MAGIC1;
-    DEBUG_PRINTF_TS("NetSaveSessionState()");
+    DEBUG_PRINTF_TS("");
     #ifdef _DEBUG_MODE_
         printSessionState(State);
     #endif
@@ -813,13 +1057,13 @@ bool
 cMyLoRaWAN::NetGetSessionState(SessionState &State) {
     if (magicFlag1 == MAGIC1) {
         State = rtcSavedSessionState;
-        DEBUG_PRINTF_TS("NetGetSessionState() - o.k.");
+        DEBUG_PRINTF_TS("o.k.");
         #ifdef _DEBUG_MODE_
             printSessionState(State);
         #endif
         return true;
     } else {
-        DEBUG_PRINTF_TS("NetGetSessionState() - failed");
+        DEBUG_PRINTF_TS("failed");
         return false;
     }
 }
@@ -842,7 +1086,7 @@ cMyLoRaWAN::GetAbpProvisioningInfo(AbpProvisioningInfo *pAbpInfo) {
     if ((magicFlag1 != MAGIC1) || (magicFlag2 != MAGIC2)) {
          return false;
     }
-    DEBUG_PRINTF_TS("GetAbpProvisioningInfo()");
+    DEBUG_PRINTF_TS("");
 
     pAbpInfo->DevAddr = rtcSavedSessionInfo.V2.DevAddr;
     pAbpInfo->NetID   = rtcSavedSessionInfo.V2.NetID;
@@ -875,14 +1119,43 @@ cMyLoRaWAN::GetAbpProvisioningInfo(AbpProvisioningInfo *pAbpInfo) {
     /// Print date and time (i.e. local time)
     void printDateTime(void) {
         struct tm timeinfo;
-        char tbuf[26];
+        char tbuf[25];
         
         time_t tnow = rtc.getLocalEpoch();
         localtime_r(&tnow, &timeinfo);
         strftime(tbuf, 25, "%Y-%m-%d %H:%M:%S", &timeinfo);
         DEBUG_PRINTF("%s", tbuf);
     }
+#endif
 
+/// Determine sleep duration and enter Deep Sleep Mode
+void prepareSleep(void) {
+    uint32_t sleep_interval = prefs.sleep_interval;
+    longSleep = false;
+    #ifdef ADC_EN
+        // Long sleep interval if battery is weak
+        if (mySensor.getVoltage() < BATTERY_WEAK) {
+            sleep_interval = prefs.sleep_interval_long;
+            longSleep = true;
+        }
+    #endif
+
+    // If the real time is available, align the wake-up time to the
+    // to next non-fractional multiple of sleep_interval past the hour
+    if (rtcLastClockSync) {
+        struct tm timeinfo;
+        time_t t_now = rtc.getLocalEpoch();
+        localtime_r(&t_now, &timeinfo);
+
+        sleep_interval = sleep_interval - ((timeinfo.tm_min * 60) % sleep_interval + timeinfo.tm_sec);
+        sleep_interval += 20; // Added extra 20-secs of sleep to allow for slow ESP32 RTC timers
+    }
+    
+    DEBUG_PRINTF_TS("Shutdown() - sleeping for %d s", sleep_interval);
+    ESP.deepSleep(sleep_interval * 1000000LL);
+}
+
+#if defined(GET_NETWORKTIME)
     /**
       * \fn UserRequestNetworkTimeCb
       * 
@@ -947,6 +1220,99 @@ cMyLoRaWAN::GetAbpProvisioningInfo(AbpProvisioningInfo *pAbpInfo) {
         LMIC_requestNetworkTime(UserRequestNetworkTimeCb, &userUTCTime);
     }
 #endif
+void
+cMyLoRaWAN::doCfgUplink(void) {
+    // if busy uplinking, just skip
+    if (this->m_fBusy || mySensor.isBusy()) {
+        //log_d("busy");
+        return;
+    }
+    // if LMIC is busy, just skip
+    //if (LMIC.opmode & (OP_POLL | OP_TXDATA | OP_TXRXPEND)) {
+    //    log_v("LMIC.opmode: 0x%02X", LMIC.opmode);
+    //    return;
+    //}
+    if (!GetTxReady())
+        return;
+
+    log_d("--- Uplink Configuration/Status ---");
+    
+    uint8_t uplink_payload[5];
+    uint8_t port;
+
+    //
+    // Encode data as byte array for LoRaWAN transmission
+    //
+    LoraEncoder encoder(uplink_payload);
+
+    if (uplinkReq == CMD_GET_DATETIME) {
+        log_d("Date/Time");
+        port = 3;
+        time_t t_now = rtc.getLocalEpoch();
+        encoder.writeUint8((t_now >> 24) & 0xff);
+        encoder.writeUint8((t_now >> 16) & 0xff);
+        encoder.writeUint8((t_now >>  8) & 0xff);
+        encoder.writeUint8( t_now        & 0xff);
+
+        // time source & status, see below
+        //
+        // bits 0..3 time source
+        //    0x00 = GPS
+        //    0x01 = RTC
+        //    0x02 = LORA
+        //    0x03 = unsynched
+        //    0x04 = set (source unknown)
+        //
+        // bits 4..7 esp32 sntp time status (not used)
+        // TODO add flags for succesful LORA time sync/manual sync
+        encoder.writeUint8((rtcSyncReq) ? 0x03 : 0x02);
+    } else if (uplinkReq == CMD_GET_CONFIG) {
+        log_d("Config");
+        port = 4;
+        encoder.writeUint8(prefs.sleep_interval >> 8);
+        encoder.writeUint8(prefs.sleep_interval & 0xFF);
+        encoder.writeUint8(prefs.sleep_interval_long >> 8);
+        encoder.writeUint8(prefs.sleep_interval_long & 0xFF);
+    } else if (uplinkReq == CMD_GET_INVERTER_SETTINGS) {
+        log_d("Inverter Settings");
+        port = 5;
+        encoder.writeUint32(0xdeadbeef);
+    } else {
+      log_v("");
+        return;
+    }
+
+    this->m_fBusy = true;
+    log_v("Trying SendBuffer: port=%d, size=%d", port, encoder.getLength());
+
+    for (int i=0; i<encoder.getLength(); i++) {
+      Serial.printf("%02X ", uplink_payload[i]);
+    }
+    Serial.println();
+    
+    // Schedule transmission
+    if (! this->SendBuffer(
+        uplink_payload,
+        encoder.getLength(),
+        // this is the completion function:
+        [](void *pClientData, bool fSucccess) -> void {
+            auto const pThis = (cMyLoRaWAN *)pClientData;
+            pThis->m_fBusy = false;
+            uplinkReq = 0;
+            log_v("Sending successful");
+        },
+        (void *)this,
+        /* confirmed */ true,
+        /* port */ port
+        )) {
+        // sending failed; callback has not been called and will not
+        // be called. Reset busy flag.
+        this->m_fBusy = false;
+        uplinkReq = 0;
+        log_v("Sending failed");
+    }
+}
+
 
 /****************************************************************************\
 |
@@ -1036,13 +1402,13 @@ cSensor::getTemperature(void)
 void
 cSensor::doUplink(int port) {
     // if busy uplinking, just skip
-    if (this->m_fBusy) {
-        DEBUG_PRINTF_TS("doUplink(): busy");
+    if (this->m_fBusy|| myLoRaWAN.isBusy()) {
+        DEBUG_PRINTF_TS("busy");
         return;
     }
     // if LMIC is busy, just skip
     if (LMIC.opmode & (OP_POLL | OP_TXDATA | OP_TXRXPEND)) {
-        DEBUG_PRINTF_TS("doUplink(): other operation in progress");    
+        DEBUG_PRINTF_TS("other operation in progress");    
         return;
     }
     
@@ -1064,6 +1430,7 @@ cSensor::doUplink(int port) {
     
     this->m_fBusy = true;
 
+    // Schedule transmission
     if (! myLoRaWAN.SendBuffer(
         loraData, encoder.getLength(),
         // this is the completion function:

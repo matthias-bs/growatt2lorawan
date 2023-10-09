@@ -42,13 +42,14 @@
 //          DFRobot FireBeetle ESP32 + FireBeetle Cover LoRa
 // 20230421 Added pin config for 
 //          Adafruit Feather ESP32 + LoRa Radio Featherwing
+// 20231009 Renamed FIREBEETLE_COVER_LORA in FIREBEETLE_ESP32_COVER_LORA
 //
 ///////////////////////////////////////////////////////////////////////////////
 
 #if defined(ARDUINO_ESP32_DEV)
     // Both variants below are based on DFRobot FireBeetle ESP32; 
     // which uses the rather unspecific "ARDUINO_ESP32_DEV"
-    #define FIREBEETLE_COVER_LORA
+    #define FIREBEETLE_ESP32_COVER_LORA
     //#define LORAWAN_NODE
 #endif
 
@@ -75,7 +76,7 @@
     #define DEBUG_TX        00        // Serial port output to   USB converter
     #define DEBUG_RX        04        // Serial port input  from USB converter (n.c.)
 
-#elif defined(FIREBEETLE_COVER_LORA)
+#elif defined(FIREBEETLE_ESP32_COVER_LORA)
     // https://wiki.dfrobot.com/FireBeetle_ESP32_IOT_Microcontroller(V3.0)__Supports_Wi-Fi_&_Bluetooth__SKU__DFR0478
     // https://wiki.dfrobot.com/FireBeetle_Covers_LoRa_Radio_868MHz_SKU_TEL0125
     #define INTERFACE_SEL   17        // Modbus interface select (0: USB / 1: RS485)
