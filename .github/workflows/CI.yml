@@ -89,7 +89,7 @@ jobs:
 
       - name: Checkout repository
         if: ${{ env.run-build == 'true' }}
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Customizing lmic_project_config.h (LMIC_ENABLE_DeviceTimeReq)
         if: ${{ env.run-build == 'true' }}
