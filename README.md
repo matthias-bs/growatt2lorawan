@@ -9,9 +9,7 @@
 > which provides a few more features and has a much cleaner architecture.
 >
 > Furthermore, the underlying LoRaWAN libraries [MCCI LoRaWAN LMIC library](https://github.com/mcci-catena/arduino-lmic)  and [MCCI Arduino LoRaWAN Library](https://github.com/mcci-catena/arduino-lorawan) seem not to be maintained any longer.
-> 
-> Only if you are using the Helium Network, you will have to stick with 
-> [growatt2lorawan](https://github.com/matthias-bs/growatt2lorawan), because Helium requires LoRaWAN v1.0.X while [growatt2lorawan-v2](https://github.com/matthias-bs/growatt2lorawan-v2) is based on [RadioLib](https://github.com/jgromes/RadioLib), which implements LoRaWAN v1.1.
+
 
 # growatt2lorawan
 LoRaWAN Node for Growatt Photovoltaic Inverter Modbus Data Interface
