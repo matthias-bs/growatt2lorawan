@@ -44,7 +44,7 @@ mqtt:
       state_topic: *g2lw_topic
       value_template: "{{ value_json.uplink_message.decoded_payload.bytes.energytoday | float }}"
       device_class: energy
-      unit_of_measurement: "Wh"
+      unit_of_measurement: "kWh"
       expire_after: *g2lw_expiry
       device:
         <<: *g2lw_device
@@ -54,7 +54,7 @@ mqtt:
       state_topic: *g2lw_topic
       value_template: "{{ value_json.uplink_message.decoded_payload.bytes.energytotal | float }}"
       device_class: energy
-      unit_of_measurement: "Wh"
+      unit_of_measurement: "kWh"
       expire_after: *g2lw_expiry
       device:
         <<: *g2lw_device
@@ -124,7 +124,7 @@ mqtt:
       state_topic: *g2lw_topic
       value_template: "{{ value_json.uplink_message.decoded_payload.bytes.pv1energytoday | float }}"
       device_class: energy
-      unit_of_measurement: "Wh"
+      unit_of_measurement: "kWh"
       expire_after: *g2lw_expiry
       device:
         <<: *g2lw_device
@@ -134,7 +134,7 @@ mqtt:
       state_topic: *g2lw_topic
       value_template: "{{ value_json.uplink_message.decoded_payload.bytes.pv1energytotal | float }}"
       device_class: energy
-      unit_of_measurement: "Wh"
+      unit_of_measurement: "kWh"
       expire_after: *g2lw_expiry
       device:
         <<: *g2lw_device
