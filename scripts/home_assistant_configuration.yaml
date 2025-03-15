@@ -1,0 +1,165 @@
+#
+# Home Assistant Configuration for growatt2lorawan
+#
+
+# Replace unique_id prefix "d005cf56" by your value of choice
+
+mqtt:    
+  sensor:
+    #
+    # growatt2lorawan
+    #
+
+    # Note:
+    # All sensor values are set to 'unavailable' <g2lw_expiry> seconds after the last update.
+    # This comes into play, because the LoRaWAN node is powered by the PV inverter, which only
+    # provides power from the PV panels. This prevents continued sending of the last values
+    # before power-down.
+    
+    - name: "PV Inverter Fault Code"
+      unique_id: "d005cf56_faultcode"
+      state_topic: &g2lw_topic "v3/pv-inverter@ttn/devices/pv-inverter-0/up"
+      value_template: "{{ value_json.uplink_message.decoded_payload.bytes.faultcode | int }}"
+      device_class: enum
+      icon: "mdi:state-machine"
+      expire_after: &g2lw_expiry 1200
+      device: &g2lw_device
+        name: "Growatt"
+        identifiers: "Growatt"
+        manufacturer: "Growatt"
+        model: "MIC600TL-X"
+    
+    - name: "PV Inverter Power"
+      unique_id: "d005cf56_power"
+      state_topic: *g2lw_topic
+      value_template: "{{ value_json.uplink_message.decoded_payload.bytes.outputpower | float }}"
+      device_class: power
+      unit_of_measurement: "W"
+      expire_after: *g2lw_expiry
+      device:
+        <<: *g2lw_device
+    
+    - name: "PV Inverter Energy Today"
+      unique_id: "d005cf56_energytoday"
+      state_topic: *g2lw_topic
+      value_template: "{{ value_json.uplink_message.decoded_payload.bytes.energytoday | float }}"
+      device_class: energy
+      unit_of_measurement: "Wh"
+      expire_after: *g2lw_expiry
+      device:
+        <<: *g2lw_device
+    
+    - name: "Growatt PV Inverter Energy Total"
+      unique_id: "d005cf56_energytotal"
+      state_topic: *g2lw_topic
+      value_template: "{{ value_json.uplink_message.decoded_payload.bytes.energytotal | float }}"
+      device_class: energy
+      unit_of_measurement: "Wh"
+      expire_after: *g2lw_expiry
+      device:
+        <<: *g2lw_device
+    
+    - name: "Growatt PV Inverter Grid Voltage"
+      unique_id: "d005cf56_gridvoltage"
+      state_topic: *g2lw_topic
+      value_template: "{{ value_json.uplink_message.decoded_payload.bytes.gridvoltage | float }}"
+      device_class: voltage
+      unit_of_measurement: "V"
+      expire_after: *g2lw_expiry
+      device:
+        <<: *g2lw_device
+    
+    - name: "Growatt PV Inverter Grid Frequency"
+      unique_id: "d005cf56_gridfrequency"
+      state_topic: *g2lw_topic
+      value_template: "{{ value_json.uplink_message.decoded_payload.bytes.gridfrequency | float }}"
+      device_class: frequency
+      unit_of_measurement: "Hz"
+      expire_after: *g2lw_expiry
+      device:
+        <<: *g2lw_device
+    
+    - name: "Growatt PV Inverter Temperature"
+      unique_id: "d005cf56_temperature"
+      state_topic: *g2lw_topic
+      value_template: "{{ value_json.uplink_message.decoded_payload.bytes.tempinverter | float }}"
+      device_class: temperature
+      unit_of_measurement: "°C"
+      expire_after: *g2lw_expiry
+      device:
+        <<: *g2lw_device
+    
+    - name: "Growatt PV Inverter PV1 Current"
+      unique_id: "d005cf56_pv1current"
+      state_topic: *g2lw_topic
+      value_template: "{{ value_json.uplink_message.decoded_payload.bytes.pv1current | float }}"
+      device_class: current
+      unit_of_measurement: "A"
+      expire_after: *g2lw_expiry
+      device:
+        <<: *g2lw_device
+    
+    - name: "Growatt PV Inverter PV1 Voltage"
+      unique_id: "d005cf56_pv1voltage"
+      state_topic: *g2lw_topic
+      value_template: "{{ value_json.uplink_message.decoded_payload.bytes.pv1voltage | float }}"
+      device_class: voltage
+      unit_of_measurement: "V"
+      expire_after: *g2lw_expiry
+      device:
+        <<: *g2lw_device
+    
+    - name: "Growatt PV Inverter PV1 Power"
+      unique_id: "d005cf56_pv1power"
+      state_topic: *g2lw_topic
+      value_template: "{{ value_json.uplink_message.decoded_payload.bytes.pv1power | float }}"
+      device_class: power
+      unit_of_measurement: "W"
+      expire_after: *g2lw_expiry
+      device:
+        <<: *g2lw_device
+    
+    - name: "Growatt PV Inverter PV1 Energy Today"
+      unique_id: "d005cf56_pv1energytoday"
+      state_topic: *g2lw_topic
+      value_template: "{{ value_json.uplink_message.decoded_payload.bytes.pv1energytoday | float }}"
+      device_class: energy
+      unit_of_measurement: "Wh"
+      expire_after: *g2lw_expiry
+      device:
+        <<: *g2lw_device
+    
+    - name: "Growatt PV Inverter PV1 Energy Total"
+      unique_id: "d005cf56_pv1energytotal"
+      state_topic: *g2lw_topic
+      value_template: "{{ value_json.uplink_message.decoded_payload.bytes.pv1energytotal | float }}"
+      device_class: energy
+      unit_of_measurement: "Wh"
+      expire_after: *g2lw_expiry
+      device:
+        <<: *g2lw_device
+    
+    - name: "Growatt PV Inverter Total Worktime"
+      unique_id: "d005cf56_totalworktime"
+      state_topic: *g2lw_topic
+      value_template: "{{ value_json.uplink_message.decoded_payload.bytes.totalworktime | float(0) }}"
+      device_class: duration
+      unit_of_measurement: "s"
+      expire_after: *g2lw_expiry
+      device:
+        <<: *g2lw_device
+
+template:
+  # Set pv_power to 0 if the input value from the inverter is unavailable.
+  # This is required if PV energy is calculated from PV power by integration.
+  - sensor:
+      - name: "PV Power"
+        unique_id: pv_power
+        device_class: power
+        unit_of_measurement: "W"
+        state: >
+          {% if is_state('sensor.growatt_pv_inverter_power', 'unavailable') %}
+            0
+          {% else %}
+            {{ states('sensor.growatt_pv_inverter_power') | float }}
+          {% endif %}

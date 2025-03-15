@@ -118,3 +118,10 @@ Change *USERNAME* and *PASSWORD* as needed:
 "username":"USERNAME","password":"PASSWORD"
 [...]
 ```
+
+## Home Assistant Integration
+
+See [home_assistant_configuration.yaml](scripts/home_assistant_configuration.yaml)
+
+![home_assistant](https://github.com/user-attachments/assets/491dbb38-bb3e-4b93-a675-d21f1bf9f9cd)
+
